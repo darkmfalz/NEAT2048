@@ -3,10 +3,12 @@ import java.util.Random;
 public class Game {
 	
 	private int[][] board;
+	public boolean canWin;
 	
 	public Game(){
 		
 		board = new int[4][4];
+		canWin = true;
 		
 		addNum();
 		addNum();
@@ -15,25 +17,46 @@ public class Game {
 	
 	private void addNum(){
 		
-		Random random = new Random();
-	
-		int x = random.nextInt(4);
-		int y = random.nextInt(4);
+		int a = 1;
 		
-		while(board[x][y] != 0){
+		for(int i = 0; i < board.length; i++){
 			
-			x = random.nextInt(4);
-			y = random.nextInt(4);
+			for(int j = 0; j < board[i].length; j++){
+				
+				a = a*board[i][j];
+				
+				if(a >= 1)
+					a = 1;
+				
+			}
 			
 		}
 		
-		boolean num = random.nextBoolean();
+		if(a == 0){
+			
+			Random random = new Random();
 		
-		if(num)
-			board[x][y] = 2;
+			int x = random.nextInt(4);
+			int y = random.nextInt(4);
+			
+			while(board[x][y] != 0){
+				
+				x = random.nextInt(4);
+				y = random.nextInt(4);
+				
+			}
+			
+			boolean num = random.nextBoolean();
+			
+			if(num)
+				board[x][y] = 2;
+			else
+				board[x][y] = 4;
+		
+		}
 		else
-			board[x][y] = 4;
-		
+			canWin = false;
+			
 	}
 	
 	public void printBoard(){
@@ -71,11 +94,27 @@ public class Game {
 		
 	}
 	
-	public void move(int dir){
+	public int sumAll(){
 		
-		for(int i = 0; i < 4; i++){
+		int sum = 0;
+		
+		for(int i = 0; i < board.length; i++){
+			
+			for(int j = 0; j < board[i].length; j++){
+				
+				sum += board[i][j];
+				
+			}
 			
 		}
+		
+		return sum;
+		
+	}
+	
+	public void move(int dir){
+		
+		int[][] boardCopy = board.clone();
 		
 		switch(dir){
 			case 0:
@@ -100,7 +139,8 @@ public class Game {
 				break;
 		}
 		
-		addNum();
+		if(!board.equals(boardCopy))
+			addNum();
 		
 	}
 	
@@ -115,10 +155,17 @@ public class Game {
 		
 		for(int i = 0; i < moves; i++){
 			
-			randomMove();
-			printBoard();
-			System.out.println();
-			
+			if(canWin){
+				
+				randomMove();
+				printBoard();
+				System.out.println(i);
+				System.out.println();
+				
+			}
+			else
+				break;
+				
 		}
 		
 	}

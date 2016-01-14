@@ -7,7 +7,7 @@ public class Main {
 		game.printBoard();
 		System.out.println();
 		
-		game.playGameRando(10);
+		game.playGameRando(100);
 		
 	}
 	
