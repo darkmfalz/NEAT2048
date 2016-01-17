@@ -1,19 +1,19 @@
 public class Brain{
 
 	private int neurons;
-	private int[][] graph;
+	private double[][] graph;
 	
-	public Brain(int neurons, int hiddenTiers, int[][] graph){
-		this.neurons = neurons;
+	public Brain(int neurons, double[][] graph){
 		
+		this.neurons = neurons;
 		this.graph = graph;
 		
 	}
 	
-	public int[] brainMove(int[][] board){
+	public int brainMove(int[][] board){
 		
 		//everything except output
-		int[] activity = new int[neurons - 4];
+		double[] activity = new double[neurons - 4];
 		
 		for(int i = 0; i < 16; i++)
 			activity[i] = board[i / 4][i % 4];
@@ -22,13 +22,27 @@ public class Brain{
 			for(int j = 0; j < neurons - 4; j++)
 				activity[i] += activity[j]*graph[i][j];
 		
-		int[] output = new int[4];
+		double[] output = new double[4];
 		
 		for(int i = 0; i < 4; i++)
 			for(int j = 4; j < neurons - 4; j++)
 				output[i] +=activity[j]*graph[i][j];
 		
-		return output;
+		double max = output[0];
+		int maxPos = 0;
+		
+		for(int i = 1; i < output.length; i++){
+			
+			if(output[i] > max){
+				
+				max = output[i];
+				maxPos = i;
+				
+			}
+			
+		}
+		
+		return maxPos;
 		
 	}
 	

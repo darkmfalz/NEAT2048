@@ -10,6 +10,8 @@ public class Breeder{
 	private HashMap<Integer, Gene> geneList;
 	private HashMap<Integer, HashMap<Integer, Gene>> generation;
 	private HashMap<Integer, Integer> species; //The key is the organism number, the value is the species number
+	private HashMap<Integer, Double> fitness; //The key is organism number, the value is fitness number
+	private Game game;
 	
 	public Breeder(int num){
 		
@@ -21,6 +23,9 @@ public class Breeder{
 		geneList = new HashMap<Integer, Gene>();
 		generation = new HashMap<Integer, HashMap<Integer, Gene>>();
 		species = new HashMap<Integer, Integer>();
+		fitness = new HashMap<Integer, Double>();
+		
+		game = new Game();
 		
 		makeFirstGen();
 		
@@ -87,13 +92,15 @@ public class Breeder{
 			
 		}
 		
-		speciateFirstGen();
+		double[][] distanceMap = distanceMapFirstGen();
+		speciateFirstGen(distanceMap);
+		fitness(distanceMap);
 		
 		System.out.println(delta + ":" + speciesNum);
 		
 	}
 	
-	private double[][] distanceMap(){
+	private double[][] distanceMapFirstGen(){
 		
 		double[][] distanceMap = new double[num][num];
 		
@@ -107,9 +114,6 @@ public class Breeder{
 					HashMap<Integer, Gene> genomeJ = generation.get(j);
 					
 					int N = Math.max(genomeI.size(), genomeJ.size());
-					
-					if(N==0)
-						System.out.println("yooo");
 					
 					Object[] keysI = genomeI.keySet().toArray();
 					Object[] keysJ = genomeJ.keySet().toArray();
@@ -173,7 +177,7 @@ public class Breeder{
 		int size = queue.size();
 		for(int i = 0; i < size; i++){
 		
-			if(i == 2000)
+			if(i == 1000)
 				delta = queue.poll();
 			else
 				queue.poll();
@@ -184,9 +188,7 @@ public class Breeder{
 		
 	}
 
-	private void speciateFirstGen(){
-		
-		double[][] distanceMap = distanceMap();
+	private void speciateFirstGen(double[][] distanceMap){
 		
 		species.put(0, 0);
 		speciesNum++;
@@ -207,6 +209,57 @@ public class Breeder{
 			}
 			
 		}
+		
+	}
+	
+	private void fitness(double[][] distanceMap){
+		
+		int n = 10;
+		
+		for(int i = 0; i < num; i++){
+			
+			Brain brain = genoToPheno(generation.get(i));
+			
+			for(int j = 0; j < n; j++){
+				
+				int score = 0;
+				
+				while(game.canWin){
+					
+					int[][] boardB4 = game.getBoard().clone();
+					
+					score = game.sumAll();
+					
+					game.move(brain.brainMove(game.getBoard()));
+					
+					//If it doesn't make a move that changes anything
+					if(boardB4.equals(game.getBoard()))
+						break;
+					
+				}
+				score += fitness.get(i);
+				fitness.put(i, (double)score);
+				game.resetBoard();
+				
+			}
+			
+		}
+		
+	}
+	
+	private Brain genoToPheno(HashMap<Integer, Gene> genome){
+		
+		double[][] graph = new double[nodes][nodes];
+		
+		Gene[] genes = genome.values().toArray(new Gene[0]);
+		
+		for(int i = 0; i < genes.length; i++){
+			
+			graph[genes[i].getIn()][genes[i].getOut()] = genes[i].getWeight();
+			
+		}
+		
+		return new Brain(nodes, graph);
 		
 	}
 	

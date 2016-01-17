@@ -15,7 +15,13 @@ public class Game {
 		
 	}
 	
-	private void resetBoard(){
+	public int[][] getBoard(){
+		
+		return board;
+		
+	}
+	
+	public void resetBoard(){
 		
 		board = new int[4][4];
 		canWin = true;
@@ -176,9 +182,6 @@ public class Game {
 			if(canWin){
 				
 				randomMove();
-				//printBoard();
-				//System.out.println(i);
-				//System.out.println();
 				
 			}
 			else
@@ -186,7 +189,6 @@ public class Game {
 				
 		}
 		
-		System.out.println(sumAll());
 		resetBoard();
 		
 	}
