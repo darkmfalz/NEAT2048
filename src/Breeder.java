@@ -177,7 +177,7 @@ public class Breeder{
 		int size = queue.size();
 		for(int i = 0; i < size; i++){
 		
-			if(i == 1000)
+			if(i == 1500)
 				delta = queue.poll();
 			else
 				queue.poll();
@@ -237,11 +237,25 @@ public class Breeder{
 						break;
 					
 				}
-				score += fitness.get(i);
+				if(fitness.containsKey(i))
+					score += fitness.get(i);
 				fitness.put(i, (double)score);
 				game.resetBoard();
 				
 			}
+			
+			int neighbors = 0;
+			
+			for(int j = 0; j < num; j++){
+				
+				if(distanceMap[i][j] <= delta)
+					neighbors++;
+				
+			}
+			
+			fitness.put(i, fitness.get(i)/n);
+			//fitness.put(i, fitness.get(i)/neighbors);
+			System.out.println(fitness.get(i));
 			
 		}
 		
