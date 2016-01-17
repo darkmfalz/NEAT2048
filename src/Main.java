@@ -6,7 +6,10 @@ public class Main {
 		game.printBoard();
 		System.out.println();
 		
-		game.playGameRando(100);
+		for(int i = 0; i < 100; i++)
+			game.playGameRando(100);
+		
+		Breeder breeder = new Breeder(100);
 		
 	}
 	

@@ -15,6 +15,16 @@ public class Game {
 		
 	}
 	
+	private void resetBoard(){
+		
+		board = new int[4][4];
+		canWin = true;
+		
+		addNum();
+		addNum();
+		
+	}
+	
 	private void addNum(){
 		
 		int a = 1;
@@ -166,15 +176,18 @@ public class Game {
 			if(canWin){
 				
 				randomMove();
-				printBoard();
-				System.out.println(i);
-				System.out.println();
+				//printBoard();
+				//System.out.println(i);
+				//System.out.println();
 				
 			}
 			else
 				break;
 				
 		}
+		
+		System.out.println(sumAll());
+		resetBoard();
 		
 	}
 	
