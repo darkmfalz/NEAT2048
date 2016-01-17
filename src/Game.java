@@ -121,21 +121,29 @@ public class Game {
 				for(int i = 0; i < 4; i++)
 					left();
 				combineLeft();
+				for(int i = 0; i < 4; i++)
+					left();
 				break;
 			case 1:
 				for(int i = 0; i < 4; i++)
 					right();
 				combineRight();
+				for(int i = 0; i < 4; i++)
+					right();
 				break;
 			case 2:
 				for(int i = 0; i < 4; i++)
 					up();
 				combineUp();
+				for(int i = 0; i < 4; i++)
+					up();
 				break;
 			case 3:
 				for(int i = 0; i < 4; i++)
 					down();
 				combineDown();
+				for(int i = 0; i < 4; i++)
+					down();
 				break;
 		}
 		

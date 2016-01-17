@@ -1,14 +1,9 @@
-import java.util.HashMap;
-
 public class Brain{
 
 	private int neurons;
-	private int hiddenTiers;
 	private int[][] graph;
 	
 	public Brain(int neurons, int hiddenTiers, int[][] graph){
-		
-		this.hiddenTiers = hiddenTiers;
 		this.neurons = neurons;
 		
 		this.graph = graph;
@@ -24,7 +19,7 @@ public class Brain{
 			activity[i] = board[i / 4][i % 4];
 		
 		for(int i = 16; i < neurons - 4; i++)
-			for(int j = 0; j < i; j++)
+			for(int j = 0; j < neurons - 4; j++)
 				activity[i] += activity[j]*graph[i][j];
 		
 		int[] output = new int[4];
