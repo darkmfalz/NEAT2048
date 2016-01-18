@@ -40,69 +40,6 @@ public class Breeder{
 	
 	private void breedNextGen(){
 		
-		int organisms = 0;
-		
-		generations++;
-		
-		HashMap<Integer, HashMap<Integer, Gene>> prevGeneration = new HashMap<Integer, HashMap<Integer, Gene>>();
-		generation.putAll(prevGeneration);
-		generation.clear();
-		
-		for(int i = 0; i < speciesNum; i++){
-			
-			PriorityQueue<Double> thisSpecies = new PriorityQueue<Double>();
-			
-			for(int j = 0; j < species.length; j++){
-				
-				if(species[j] == i)
-					thisSpecies.add(fitness[j]);
-				
-			}
-			
-			int[] thisSpeciesArr = new int[thisSpecies.size()/2];
-			
-			for(int j = 0; j < thisSpecies.size()/2; j++){
-				
-				double currFitness = thisSpecies.poll();
-				
-				for(int k = 0; k < fitness.length; k++){
-					
-					if(species[k] == i && fitness[k] == currFitness)
-						thisSpeciesArr[j] = k;
-					
-				}
-				
-			}
-			
-			Random random = new Random();
-			
-			for(int j = 0; j < thisSpeciesArr.length; j++){
-				
-				int parentID1 = random.nextInt(thisSpeciesArr.length - 1);
-				if(parentID1 >= j)
-					parentID1++;
-				int parentID2 = random.nextInt(thisSpeciesArr.length - 1);
-				if(parentID2 >= j)
-					parentID2++;
-				
-				HashMap<Integer, Gene> parent = prevGeneration.get(thisSpeciesArr[j]);
-				HashMap<Integer, Gene> parent1 = prevGeneration.get(parentID1);
-				HashMap<Integer, Gene> parent2 = prevGeneration.get(parentID2);
-				
-				HashMap<Integer, Gene> child1 = makeChild(parent, parent1);
-				HashMap<Integer, Gene> child2 = makeChild(parent, parent2);
-			
-				generation.put(organisms++, child1);
-				generation.put(organisms++, child2);
-				
-			}
-			
-		}
-		
-		double[][] distanceMap = distanceMap(prevGeneration);
-		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Species:" + speciesNum);
-		fitness(distanceMap);
-		
 	}
 	
 	private void makeFirstGen(){
@@ -301,6 +238,7 @@ public class Breeder{
 				HashMap<Integer, Gene> genomeI = generation.get(i);
 				HashMap<Integer, Gene> genomeJ = prevGeneration.get(j);
 				
+				System.out.println(genomeI + "/" + genomeJ);
 				int N = Math.max(genomeI.size(), genomeJ.size());
 				
 				Object[] keysI = genomeI.keySet().toArray();
@@ -370,6 +308,27 @@ public class Breeder{
 		}
 		
 		return distanceMap;
+		
+	}
+	
+	private void speciate(double[][] distanceMap){
+		
+		for(int i = 1; i < distanceMap.length; i++){
+			
+			for(int j = 0; j < i; j++){
+				
+				if(distanceMap[i][j] <= delta){
+					
+					species[i] = species[j];
+					break;
+					
+				}
+				else if(j == i - 1)
+					species[i] = speciesNum++;
+				
+			}
+			
+		}
 		
 	}
 	
@@ -501,170 +460,11 @@ public class Breeder{
 		
 	}
 	
-	private HashMap<Integer, Gene> makeChild(HashMap<Integer, Gene> parent1, HashMap<Integer, Gene> parent2){
-		
-		Random random = new Random();
-		
-		HashMap<Integer, Gene> child = new HashMap<Integer, Gene>();
-		
-		Integer[] parentKeys1 = parent1.keySet().toArray(new Integer[0]);
-		Integer[] parentKeys2 = parent2.keySet().toArray(new Integer[0]);
-		
-		for(int i = 0; i < parentKeys1.length; i++){
-			
-			for(int j = 0; j < parentKeys2.length; j++){
-				
-				if(parentKeys1[i] == parentKeys2[j]){
-					
-					boolean rand = random.nextBoolean();
-					
-					if(rand)
-						child.put(parentKeys1[i], parent1.get(i));
-					else
-						child.put(parentKeys2[j], parent2.get(j));
-					
-				}
-				
-			}
-			
-		}
-		
-		double mutateDrawing = random.nextDouble();
-		
-		if(mutateDrawing <= 0.25){
-		
-			int n = (int) Math.round(Math.abs(random.nextGaussian()) + 1);
-			
-			for(int i = 0; i < n; i++)
-				child = mutate(child);
-			
-		}
-		
-		return child;
+	private HashMap<Integer, Gene> makeChild(HashMap<Integer, Gene> parent1, HashMap<Integer, Gene> parent2, double fitness1, double fitness2){
 		
 	}
 
 	private HashMap<Integer, Gene> mutate(HashMap<Integer, Gene> organism){
-		
-		Random random = new Random();
-		
-		boolean mutationType = random.nextBoolean();
-		
-		//Add Connection
-		if(mutationType){
-			
-			Integer[] keys = organism.keySet().toArray(new Integer[0]);
-			
-			HashMap<Integer, Double> nodes = new HashMap<Integer, Double>();
-			for(int i = 0; i < keys.length; i++){
-				
-				if(!nodes.containsKey(keys[i]))
-					nodes.put(keys[i], tiers.get(keys[i]));
-				
-			}
-			
-			keys = nodes.keySet().toArray(new Integer[0]);
-			int in = -1;
-			int out = -1;
-			boolean cont = true;
-			while(cont){
-				
-				in = keys[random.nextInt(keys.length)];
-				out = keys[random.nextInt(keys.length)];
-				
-				if(nodes.get(in) > nodes.get(out)){
-					
-					cont = false;
-					
-				}
-				
-			}
-			
-			boolean doesntExist = true;
-			Gene newPosGene = new Gene(in, out, 1.0, innovTotal);
-			Gene[] genes = geneList.values().toArray(new Gene[0]);
-			for(int i = 0; i < genes.length; i++){
-				
-				if(newPosGene.getIn() == genes[i].getIn() && newPosGene.getOut() == genes[i].getOut()){
-					
-					if(random.nextBoolean())
-						organism.put(genes[i].getInnov(), new Gene(in, out, random.nextDouble() + .1, genes[i].getInnov()));
-					else
-						organism.put(genes[i].getInnov() + 1, new Gene(in, out, -1*random.nextDouble() - .1, genes[i].getInnov() + 1));
-					doesntExist = false;
-					
-				}
-					
-			}
-			
-			if(doesntExist){
-				
-				geneList.put(innovTotal++, newPosGene);
-				Gene newNegGene = new Gene(in, out, -1.0, innovTotal);
-				geneList.put(innovTotal++, newNegGene);
-				
-				if(random.nextBoolean())
-					organism.put(newPosGene.getInnov(), new Gene(in, out, random.nextDouble() + .1, newPosGene.getInnov()));
-				else
-					organism.put(newNegGene.getInnov(), new Gene(in, out, -1*random.nextDouble() - .1, newNegGene.getInnov()));
-				
-			}
-			
-		}
-		//Add Node
-		else{
-			
-			Integer[] keys = organism.keySet().toArray(new Integer[0]);
-			int genePos = random.nextInt(keys.length);
-			int geneID = keys[genePos];
-			Gene gene = organism.get(geneID);
-			organism.remove(geneID);
-			
-			double tierOut = tiers.get(gene.getOut());
-			double tierIn = tiers.get(gene.getIn());
-			
-			double tier = (tierOut + tierIn)/2;
-			
-			int in = gene.getIn();
-			int out = gene.getOut();
-			
-			Gene newPosGene1 = new Gene(nodes, out, 1.0, innovTotal);
-			geneList.put(innovTotal++, newPosGene1);
-			Gene newNegGene1 = new Gene(nodes, out, -1.0, innovTotal);
-			geneList.put(innovTotal++, newNegGene1);
-			Gene newPosGene2 = new Gene(in, nodes, 1.0, innovTotal);
-			geneList.put(innovTotal++, newPosGene2);
-			Gene newNegGene2 = new Gene(in, nodes, -1.0, innovTotal);
-			geneList.put(innovTotal++, newNegGene2);
-			
-			tiers.put(nodes++, tier);
-			
-			if(gene.getWeight() > 0.0){
-				
-				Gene gene1 = new Gene(nodes, out, 1.0, newPosGene1.getInnov());
-				gene1.setWeight(gene.getWeight());
-				Gene gene2 = new Gene(in, nodes, 1.0, newPosGene2.getInnov());
-				gene2.setWeight(gene.getWeight());
-				
-				organism.put(gene1.getInnov(), gene1);
-				organism.put(gene2.getInnov(), gene2);
-				
-			}
-			else{
-				
-				Gene gene1 = new Gene(nodes, out, -1.0, newNegGene1.getInnov());
-				gene1.setWeight(gene.getWeight());
-				Gene gene2 = new Gene(in, nodes, -1.0, newNegGene2.getInnov());
-				gene2.setWeight(gene.getWeight());
-				
-				organism.put(gene1.getInnov(), gene1);
-				organism.put(gene2.getInnov(), gene2);
-				
-			}
-			
-		}
-		
-		return organism;
 		
 	}
 	
