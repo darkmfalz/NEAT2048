@@ -46,4 +46,10 @@ public class Brain{
 		
 	}
 	
+	public double[][] getGraph(){
+		
+		return graph;
+		
+	}
+	
 }

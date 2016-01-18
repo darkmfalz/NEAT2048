@@ -6,11 +6,12 @@ public class Breeder{
 	private int speciesNum;
 	private int nodes;
 	private int innovTotal;
+	private int generations;
 	private double delta = 10;
 	private HashMap<Integer, Gene> geneList;
 	private HashMap<Integer, HashMap<Integer, Gene>> generation;
-	private HashMap<Integer, Integer> species; //The key is the organism number, the value is the species number
-	private HashMap<Integer, Double> fitness; //The key is organism number, the value is fitness number
+	private int[] species; //The key is the organism number, the value is the species number
+	private double[] fitness; //The key is organism number, the value is fitness number
 	private Game game;
 	
 	public Breeder(int num){
@@ -19,15 +20,86 @@ public class Breeder{
 		speciesNum = 0;
 		nodes = 20;
 		innovTotal = 0;
+		generations = 0;
 		
 		geneList = new HashMap<Integer, Gene>();
 		generation = new HashMap<Integer, HashMap<Integer, Gene>>();
-		species = new HashMap<Integer, Integer>();
-		fitness = new HashMap<Integer, Double>();
+		species = new int[num];
+		fitness = new double[num];
 		
 		game = new Game();
 		
 		makeFirstGen();
+		
+		for(int i = 0; i < 100; i++)
+			breedNextGen();
+		
+	}
+	
+	private void breedNextGen(){
+		
+		int organisms = 0;
+		
+		generations++;
+		
+		HashMap<Integer, HashMap<Integer, Gene>> prevGeneration = new HashMap<Integer, HashMap<Integer, Gene>>();
+		generation.putAll(prevGeneration);
+		generation.clear();
+		
+		for(int i = 0; i < speciesNum; i++){
+			
+			PriorityQueue<Double> thisSpecies = new PriorityQueue<Double>();
+			
+			for(int j = 0; j < species.length; j++){
+				
+				if(species[j] == i)
+					thisSpecies.add(fitness[j]);
+				
+			}
+			
+			int[] thisSpeciesArr = new int[thisSpecies.size()/2];
+			
+			for(int j = 0; j < thisSpecies.size()/2; j++){
+				
+				double currFitness = thisSpecies.poll();
+				
+				for(int k = 0; k < fitness.length; k++){
+					
+					if(species[k] == i && fitness[k] == currFitness)
+						thisSpeciesArr[j] = k;
+					
+				}
+				
+			}
+			
+			Random random = new Random();
+			
+			for(int j = 0; j < thisSpeciesArr.length; j++){
+				
+				int parentID1 = random.nextInt(thisSpeciesArr.length - 1);
+				if(parentID1 >= j)
+					parentID1++;
+				int parentID2 = random.nextInt(thisSpeciesArr.length - 1);
+				if(parentID2 >= j)
+					parentID2++;
+				
+				HashMap<Integer, Gene> parent = prevGeneration.get(thisSpeciesArr[j]);
+				HashMap<Integer, Gene> parent1 = prevGeneration.get(parentID1);
+				HashMap<Integer, Gene> parent2 = prevGeneration.get(parentID2);
+				
+				HashMap<Integer, Gene> child1 = makeChild(parent, parent1);
+				HashMap<Integer, Gene> child2 = makeChild(parent, parent2);
+			
+				generation.put(organisms++, child1);
+				generation.put(organisms++, child2);
+				
+			}
+			
+		}
+		
+		double[][] distanceMap = distanceMap(prevGeneration);
+		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Species:" + speciesNum);
+		fitness(distanceMap);
 		
 	}
 	
@@ -94,9 +166,8 @@ public class Breeder{
 		
 		double[][] distanceMap = distanceMapFirstGen();
 		speciateFirstGen(distanceMap);
+		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Species:" + speciesNum);
 		fitness(distanceMap);
-		
-		System.out.println(delta + ":" + speciesNum);
 		
 	}
 	
@@ -190,7 +261,7 @@ public class Breeder{
 
 	private void speciateFirstGen(double[][] distanceMap){
 		
-		species.put(0, 0);
+		species[0] = 0;
 		speciesNum++;
 		
 		for(int i = 1; i < distanceMap.length; i++){
@@ -199,12 +270,12 @@ public class Breeder{
 				
 				if(distanceMap[i][j] <= delta){
 					
-					species.put(i, species.get(j));
+					species[i] = species[j];
 					break;
 					
 				}
 				else if(j == i - 1)
-					species.put(i, speciesNum++);
+					species[i] = speciesNum++;
 				
 			}
 			
@@ -212,8 +283,95 @@ public class Breeder{
 		
 	}
 	
+	private double[][] distanceMap(HashMap<Integer, HashMap<Integer, Gene>> prevGeneration){
+		
+		double[][] distanceMap = new double[num][num];
+		
+		for(int i = 0; i < num; i++){
+			
+			for(int j = 0; j < num; j++){
+				
+				HashMap<Integer, Gene> genomeI = generation.get(i);
+				HashMap<Integer, Gene> genomeJ = prevGeneration.get(j);
+				
+				int N = Math.max(genomeI.size(), genomeJ.size());
+				
+				Object[] keysI = genomeI.keySet().toArray();
+				Object[] keysJ = genomeJ.keySet().toArray();
+				
+				double Wn = 0;
+				double n = 0;
+				double D = 0;
+				double E = 0;
+				double maxI = 0;
+				double maxJ = 0;
+				
+				for(int a = 0; a < genomeI.size(); a++){
+					
+					for(int b = 0; b < genomeJ.size(); b++){
+						
+						maxI = (double) Math.max((Integer)keysI[a], maxI);
+						maxJ = (double) Math.max((Integer)keysJ[b], maxJ);
+						
+						if((Integer)keysI[a] == (Integer)keysJ[b]){
+							
+							n++;
+							Wn += Math.abs(genomeI.get((Integer)keysI[a]).getWeight() - genomeJ.get((Integer)keysJ[b]).getWeight());
+							
+						}
+						
+					}
+					
+				}
+				
+				E = Math.abs(maxI - maxJ);
+				D = Math.min(maxI, maxJ) - n;
+				
+				double W;
+				
+				if(n == 0)
+					W = Integer.MAX_VALUE;
+				else
+					W = Wn/n;
+				
+				distanceMap[i][j] = E/N + D/N + W;
+					
+			}
+			
+		}
+		
+		PriorityQueue<Double> queue = new PriorityQueue<Double>();
+		
+		for(int i = 0; i < distanceMap.length; i++){
+			
+			for(int j = 0; j < distanceMap[i].length; j++){
+				
+				queue.add(distanceMap[i][j]);
+				
+			}
+			
+		}
+		
+		int size = queue.size();
+		for(int i = 0; i < size; i++){
+		
+			if(i == 1500)
+				delta = queue.poll();
+			else
+				queue.poll();
+			
+		}
+		
+		return distanceMap;
+		
+	}
+	
 	private void fitness(double[][] distanceMap){
 		
+		double maxfit = 0;
+		int maxfitspec = 0;
+		double minfit = Double.MAX_VALUE;
+		int minfitspec = 0;
 		int n = 10;
 		
 		for(int i = 0; i < num; i++){
@@ -237,9 +395,8 @@ public class Breeder{
 						break;
 					
 				}
-				if(fitness.containsKey(i))
-					score += fitness.get(i);
-				fitness.put(i, (double)score);
+				score += fitness[i];
+				fitness[i] = (double)score;
 				game.resetBoard();
 				
 			}
@@ -253,11 +410,71 @@ public class Breeder{
 				
 			}
 			
-			fitness.put(i, fitness.get(i)/n);
-			//fitness.put(i, fitness.get(i)/neighbors);
-			System.out.println(fitness.get(i));
+			fitness[i] = fitness[i]/n;
+			//fitness[i] = fitness[i]/neighbors;
+			
+			if(fitness[i] > maxfit){
+				
+				maxfit = fitness[i];
+				maxfitspec = i;
+				
+			}
+			
+			if(fitness[i] < minfit){
+				
+				minfit = fitness[i];
+				minfitspec = i;
+				
+			}
 			
 		}
+		
+		System.out.println("Organism " + maxfitspec + "\nfitness:" + fitness[maxfitspec] + "\ntopology:");
+		double[][] fit = genoToPheno(generation.get(maxfitspec)).getGraph().clone();
+		
+		System.out.print("{");
+		for(int i = 0; i < fit.length; i++){
+			
+			System.out.print("{");
+			for(int j = 0; j < fit[i].length; j++){
+				
+				if(j != fit[i].length - 1)
+					System.out.print(fit[i][j] + ",");
+				else
+					System.out.print(fit[i][j]);
+				
+			}
+			if(i != fit.length - 1)
+				System.out.print("},\n");
+			else
+				System.out.print("}");
+			
+		}
+		System.out.println("}");
+		
+		//Prints out the LEAST fit organism
+		/*System.out.println("Organism " + minfitspec + "\nfitness:" + fitness[minfitspec] + "\ntopology:");
+		fit = genoToPheno(generation.get(minfitspec)).getGraph().clone();
+		
+		System.out.print("{");
+		for(int i = 0; i < fit.length; i++){
+			
+			System.out.print("{");
+			for(int j = 0; j < fit[i].length; j++){
+				
+				if(j != fit[i].length - 1)
+					System.out.print(fit[i][j] + ",");
+				else
+					System.out.print(fit[i][j]);
+				
+			}
+			if(i != fit.length - 1)
+				System.out.print("},\n");
+			else
+				System.out.print("}");
+			
+		}
+		System.out.println("}");*/
 		
 	}
 	
@@ -275,6 +492,63 @@ public class Breeder{
 		
 		return new Brain(nodes, graph);
 		
+	}
+	
+	private HashMap<Integer, Gene> makeChild(HashMap<Integer, Gene> parent1, HashMap<Integer, Gene> parent2){
+		
+		Random random = new Random();
+		
+		HashMap<Integer, Gene> child = new HashMap<Integer, Gene>();
+		
+		Integer[] parentKeys1 = parent1.keySet().toArray(new Integer[0]);
+		Integer[] parentKeys2 = parent2.keySet().toArray(new Integer[0]);
+		
+		for(int i = 0; i < parentKeys1.length; i++){
+			
+			for(int j = 0; j < parentKeys2.length; j++){
+				
+				if(parentKeys1[i] == parentKeys2[j]){
+					
+					boolean rand = random.nextBoolean();
+					
+					if(rand)
+						child.put(parentKeys1[i], parent1.get(i));
+					else
+						child.put(parentKeys2[j], parent2.get(j));
+					
+				}
+				
+			}
+			
+		}
+		
+		double mutateDrawing = random.nextDouble();
+		
+		if(mutateDrawing <= 0.25)
+			child = mutate(child);
+		
+		return child;
+		
+	}
+
+	private HashMap<Integer, Gene> mutate(HashMap<Integer, Gene> organism){
+		
+		Random random = new Random();
+		
+		boolean mutationType = random.nextBoolean();
+		
+		//Add Connection
+		if(mutationType){
+			
+			
+			
+		}
+		//Add Node
+		else{
+			
+			
+			
+		}
 	}
 	
 }
