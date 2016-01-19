@@ -40,6 +40,40 @@ public class Breeder{
 	
 	private void breedNextGen(){
 		
+		//breed within every species
+		for(int i = 0; i < speciesNum; i++){
+			
+			//select all members of species
+			ArrayList<Integer> orgoSpecies = new ArrayList<Integer>();
+			for(int j = 0; j < species.length; j++){
+				
+				if(species[j] == i)
+					orgoSpecies.add(species[j]);
+				
+			}
+			//Order by fitness
+			PriorityQueue<Double> orgoFitness = new PriorityQueue<Double>();
+			for(int j = 0; j < orgoSpecies.size(); j++)
+				orgoFitness.add(-1*fitness[orgoSpecies.get(j)]);
+			//Select Top 50%
+			int[] top50 = new int[orgoSpecies.size()/2];
+			for(int j = 0; j < orgoSpecies.size()/2; j++){
+				
+				double currFitness = -1*orgoFitness.poll();
+				for(int k = 0; k < fitness.length; k++){
+					
+					if(fitness[k] == currFitness)
+						top50[j] = k;
+					
+				}
+				
+			}
+			
+			//randomly pair top 50%, s.t. that everyone has at least 2 children
+				//make children
+			
+		}
+		
 	}
 	
 	private void makeFirstGen(){
@@ -84,7 +118,7 @@ public class Breeder{
 			for(int j = 0; j < numGenes; j++){
 				
 				int next = random.nextInt(128);
-				Gene gene = geneList.get(next);
+				Gene gene = new Gene(geneList.get(next).getIn(), geneList.get(next).getOut(), geneList.get(next).getWeight(), geneList.get(next).getInnov());
 				
 				//if the gene is even -- positive -- and the genome contains neither it nor its negative
 				if(next % 2 == 0 && !(genome.containsKey(next) || genome.containsKey(next + 1))){
