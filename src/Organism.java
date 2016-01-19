@@ -27,6 +27,16 @@ public class Organism{
 		
 	}
 	
+	public Organism(int id, HashMap<Integer, Gene> genome){
+		
+		this.id = id;
+		fitness = -1;
+		species = -1;
+		
+		this.genome = new HashMap<Integer, Gene>(genome);
+		
+	}
+	
 	public int getID(){
 		
 		return id;
@@ -68,7 +78,7 @@ public class Organism{
 		if(genome.containsKey(gene.getInnov())){
 			
 			genome.remove(gene.getInnov());
-			genome.put(gene.getInnov(), gene);
+			genome.put(gene.getInnov(), gene.clone());
 			
 		}
 		
