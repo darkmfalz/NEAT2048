@@ -8,6 +8,7 @@ public class Breeder{
 	private int nodes;
 	private int innovTotal;
 	private int generations;
+	public double maxFitness = 0;;
 	private double delta = 10;
 	private HashMap<Integer, Gene> geneList;
 	private HashMap<Integer, Organism> generation;
@@ -101,10 +102,9 @@ public class Breeder{
 		
 		double[][] distanceMap = distanceMapFirstGen();
 		speciateFirstGen(distanceMap);
-		distanceMap = distanceMapFirstGen();
 		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));
 		oldNumOrgo = numOrgo;
-		fitness(distanceMap);
+		fitness();
 		
 	}
 	
@@ -185,7 +185,8 @@ public class Breeder{
 		int size = queue.size();
 		for(int i = 0; i < size; i++){
 		
-			if(i == 1500)
+			double limit = 1500.0/10000.0*numOrgo*oldNumOrgo;
+			if(i == (int)limit)
 				delta = queue.poll();
 			else
 				queue.poll();
@@ -203,11 +204,19 @@ public class Breeder{
 		
 		for(int i = 1; i < distanceMap.length; i++){
 			
+			int[] speciated = new int[i];
+			for(int j = 0; j < i; j++)
+				speciated[j] = j;
+			
+			speciated = shuffleArray(speciated);
+			
 			for(int j = 0; j < i; j++){
 				
-				if(distanceMap[i][j] <= delta){
+				int comp = speciated[j];
+				
+				if(distanceMap[i][comp] <= delta){
 					
-					generation.get(i).setSpecies(generation.get(j).getSpecies());
+					generation.get(i).setSpecies(generation.get(comp).getSpecies());
 					break;
 					
 				}
@@ -241,6 +250,7 @@ public class Breeder{
 			}
 			
 		}
+		/*
 		//eliminate species w/ < 4 organisms
 		for(int i = 0; i < speciesN.length; i++){
 			
@@ -252,6 +262,7 @@ public class Breeder{
 					if(generation.get(j).getSpecies() == i){
 						
 						generation.remove(j);
+						speciesN[i]--;
 						//replace with random twin
 						int randID = random.nextInt(generation.size() - 1);
 						while(generation.get(randID).getSpecies() == i)
@@ -259,7 +270,9 @@ public class Breeder{
 						if(randID >= j)
 							randID++;
 						Organism twin = generation.get(randID).clone();
+						twin.setID(j);
 						generation.put(j, twin);
+						speciesN[twin.getSpecies()]++;
 						
 					}
 					
@@ -267,11 +280,100 @@ public class Breeder{
 				
 			}
 			
+		}*/
+		//Or, instead, add the necessary number to continue the existence of species
+		for(int i = 0; i < speciesN.length; i++){
+			
+			//if there are an odd number of organisms
+			//randomly clone
+			while(speciesN[i] < 4){
+				
+				int randID = random.nextInt(generation.size());
+				while(generation.get(randID).getSpecies() != i)
+					randID = random.nextInt(generation.size() - 1);
+				Organism twin = generation.get(randID).clone();
+				twin.setID(numOrgo);
+				generation.put(numOrgo, twin);
+				
+				numOrgo++;
+				speciesN[i]++;
+				
+			}
+			
 		}
 		
 	}
 	
-	private void fitness(double[][] distanceMap){
+	public void breedNextGen(){
+		
+		int organisms = 0;
+		
+		HashMap<Integer, Organism> prevGeneration = new HashMap<Integer, Organism>(generation);
+		oldNumOrgo = prevGeneration.size();
+		generation.clear();
+		
+		for(int i = 0; i < speciesNum; i++){
+
+			Comparator<Organism> fitnessComparator = new Comparator<Organism>(){
+				@Override
+				public int compare(Organism o1, Organism o2){
+					return -1*Double.compare(o1.getFitness(), o2.getFitness());
+					}
+				};
+				
+			PriorityQueue<Organism> fitnessQueue = new PriorityQueue<Organism>(fitnessComparator);
+			
+			int spec = 0;
+			for(int j = 0; j < prevGeneration.size(); j++){
+				if(prevGeneration.get(j).getSpecies() == i){
+					spec++;
+					fitnessQueue.add(prevGeneration.get(j));
+				}
+			}
+			
+			Organism[] fit = new Organism[fitnessQueue.size()/2];
+			for(int j = 0; j < fit.length; j++)
+				fit[j] = fitnessQueue.poll();
+			
+			Random random = new Random();
+			for(int j = 0; j < fit.length; j++){
+				
+				Organism parent = fit[j];
+				
+				int parentID1 = random.nextInt(fit.length - 1);
+				if(parentID1 >= j)
+					parentID1++;
+				Organism parent1 = fit[parentID1];
+				
+				int parentID2 = random.nextInt(fit.length - 1);
+				if(parentID2 >= j)
+					parentID2++;
+				Organism parent2 = fit[parentID2];
+				
+				Organism child1 = makeChild(parent, parent1);
+				child1.setID(organisms);
+				generation.put(organisms, child1);
+				organisms++;
+				
+				Organism child2 = makeChild(parent, parent2);
+				child2.setID(organisms);
+				generation.put(organisms, child2);
+				organisms++;
+		
+			}
+			
+		}
+		
+		generations++;
+		//double[][] distanceMap = distanceMapFirstGen();
+		//speciateFirstGen(distanceMap);
+		//distanceMap = distanceMapFirstGen();
+		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));
+		//fitness(distanceMap);
+		
+	}
+	
+	private void fitness(){
 		
 		double maxfit = 0;
 		int maxfitspec = 0;
@@ -334,7 +436,9 @@ public class Breeder{
 			
 		}
 		
-		System.out.println("Organism " + maxfitspec + "\nfitness:" + generation.get(maxfitspec).getFitness()+ "\ntopology:");
+		maxFitness = generation.get(maxfitspec).getFitness();
+		
+		System.out.println("Organism " + maxfitspec + ", Species " + generation.get(maxfitspec).getSpecies() + "\nfitness:" + generation.get(maxfitspec).getFitness() + "\ntopology:");
 		double[][] fit = genoToPheno(generation.get(maxfitspec).cloneGenome()).getGraph().clone();
 		
 		System.out.print("{");
@@ -383,6 +487,12 @@ public class Breeder{
 		
 	}
 	
+	private Organism makeChild(Organism parent1, Organism parent2){
+		
+		return parent1.clone();
+		
+	}
+	
 	private Brain genoToPheno(HashMap<Integer, Gene> genome){
 		
 		double[][] graph = new double[nodes][nodes];
@@ -396,6 +506,24 @@ public class Breeder{
 		}
 		
 		return new Brain(nodes, graph);
+		
+	}
+	
+	public int[] shuffleArray(int[] ar){
+		
+		Random rnd = new Random();
+		
+		for (int i = ar.length - 1; i > 0; i--){
+			
+			int index = rnd.nextInt(i + 1);
+			// Simple swap
+			int a = ar[index];
+			ar[index] = ar[i];
+			ar[i] = a;
+			
+		}
+		
+		return ar;
 		
 	}
 	

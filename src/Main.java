@@ -6,6 +6,9 @@ public class Main {
 		
 		Breeder breeder = new Breeder(100);
 		
+		while(breeder.maxFitness < 2048)
+			breeder.breedNextGen();
+		
 	}
 	
 }
