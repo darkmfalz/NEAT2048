@@ -64,4 +64,14 @@ public class Gene {
 		
 	}
 	
+	public Gene clone(){
+		
+		Gene gene = new Gene(in, out, weight, innovNum);
+		if(!enabled)
+			gene.disable();
+		
+		return gene;
+		
+	}
+	
 }
