@@ -2,12 +2,12 @@ import java.util.*;
 
 public class Breeder{
 
-	private int numOrgo;
+	public int numOrgo;
 	private int oldNumOrgo;
 	private int speciesNum;
 	private int nodes;
 	private int innovTotal;
-	private int generations;
+	public int generations;
 	public double maxFitness = 0;;
 	private double delta = 10;
 	private HashMap<Integer, Gene> geneList;
@@ -105,7 +105,7 @@ public class Breeder{
 		
 		double[][] distanceMap = distanceMapFirstGen();
 		speciateFirstGen(distanceMap);
-		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + numOrgo + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));oldNumOrgo = numOrgo;
+		//System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + numOrgo + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));oldNumOrgo = numOrgo;
 		fitness();
 		
 		if(generation.size() > 1000)
@@ -373,7 +373,7 @@ public class Breeder{
 		generations++;
 		double[][] distanceMap = distanceMap(prevGeneration);
 		speciate(distanceMap, prevGeneration);
-		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + numOrgo + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));
+		//System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + numOrgo + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));
 		fitness();
 		
 		if(generation.size() > 1000)
@@ -644,7 +644,7 @@ public class Breeder{
 		
 		maxFitness = generation.get(maxfitspec).getFitness();
 		
-		System.out.println("Organism " + maxfitspec + ", Species " + generation.get(maxfitspec).getSpecies() + "\nfitness:" + generation.get(maxfitspec).getFitness() + "\ntopology:");
+		//System.out.println("Organism " + maxfitspec + ", Species " + generation.get(maxfitspec).getSpecies() + "\nfitness:" + generation.get(maxfitspec).getFitness() + "\ntopology:");
 		double[][] fit = genoToPheno(generation.get(maxfitspec).cloneGenome()).getGraph().clone();
 		
 		/*System.out.print("{");
@@ -746,7 +746,13 @@ public class Breeder{
 		
 	}
 	
-	private Brain genoToPheno(HashMap<Integer, Gene> genome){
+	private HashMap<Integer, Gene> mutate(HashMap<Integer, Gene> genome){
+		
+		
+		
+	}
+	
+ 	private Brain genoToPheno(HashMap<Integer, Gene> genome){
 		
 		double[][] graph = new double[nodes][nodes];
 		
@@ -762,6 +768,13 @@ public class Breeder{
 		
 	}
 	
+ 	public void printFitness(){
+ 		
+ 		for(int i = 0; i < generation.size(); i++)
+ 			System.out.println(generation.get(i).getFitness());
+ 		
+ 	}
+ 	
 	public int[] shuffleArray(int[] ar){
 		
 		Random rnd = new Random();
