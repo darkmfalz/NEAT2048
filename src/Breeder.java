@@ -720,15 +720,27 @@ public class Breeder{
 					
 					boolean choice = random.nextBoolean();
 					
-					if(choice)
+					if(choice){
+						double enable = random.nextDouble();
+						if(enable > 0.25)
+							genome1values[i].enable();
 						genome.put(genome1values[i].getInnov(), genome1values[i]);
-					else
+					}
+					else{
+						double enable = random.nextDouble();
+						if(enable > 0.25)
+							genome2values[j].enable();
 						genome.put(genome2values[j].getInnov(), genome2values[j]);
+					}
 					break;
 					
 				}
-				else if(parent1.getFitness() >= parent2.getFitness() && j == genome2.size() - 1)
+				else if(parent1.getFitness() >= parent2.getFitness() && j == genome2.size() - 1){
+					double enable = random.nextDouble();
+					if(enable > 0.25)
+						genome1values[i].enable();
 					genome.put(genome1values[i].getInnov(), genome1values[i]);
+				}
 				
 			}
 			
@@ -742,8 +754,12 @@ public class Breeder{
 					
 					if(genome1values[j] == genome2values[i])
 						break;
-					else if(j == genome1.size() - 1)
+					else if(j == genome1.size() - 1){
+						double enable = random.nextDouble();
+						if(enable > 0.25)
+							genome2values[i].enable();
 						genome.put(genome2values[i].getInnov(), genome2values[i]);
+					}
 					
 				}
 				
@@ -764,7 +780,7 @@ public class Breeder{
 		
 		Random random = new Random();
 		boolean mutation = random.nextBoolean();
-		mutation = false;
+		mutation = true;
 		
 		if(mutation){
 			
@@ -772,11 +788,49 @@ public class Breeder{
 			
 			Gene[] genomeKeys = genome.values().toArray(new Gene[0]);
 			
+			Gene gene = genomeKeys[random.nextInt(genomeKeys.length)];
+			genome.remove(gene.getInnov());
+			gene.disable();
+			genome.put(gene.getInnov(), gene);
+			
+			tiers.put(nodes, (tiers.get(gene.getIn()) + tiers.get(gene.getOut()))/2);
+			Gene gene1pos = new Gene(nodes, gene.getOut(), 1.0, innovTotal++);
+			Gene gene1neg = new Gene(nodes, gene.getOut(), -1.0, innovTotal++);
+			Gene gene2pos = new Gene(gene.getIn(), nodes, 1.0, innovTotal++);
+			Gene gene2neg = new Gene(gene.getIn(), nodes, -1.0, innovTotal++);
+			
+			geneList.put(gene1pos.getInnov(), gene1pos);
+			geneList.put(gene1neg.getInnov(), gene1neg);
+			geneList.put(gene2pos.getInnov(), gene2pos);
+			geneList.put(gene2neg.getInnov(), gene2neg);
+			
+			nodes++;
+			
+			if(gene.getWeight() >  0){
+				
+				Gene gene1 = gene1pos.clone();
+				gene1.setWeight(gene.getWeight());
+				genome.put(gene1.getInnov(), gene1);
+				Gene gene2 = gene2pos.clone();
+				gene2.setWeight(gene.getWeight());
+				genome.put(gene2.getInnov(), gene2);
+				
+			}
+			else{
+				
+				Gene gene1 = gene1neg.clone();
+				gene1.setWeight(gene.getWeight());
+				genome.put(gene1.getInnov(), gene1);
+				Gene gene2 = gene2neg.clone();
+				gene2.setWeight(gene.getWeight());
+				genome.put(gene2.getInnov(), gene2);
+				
+			}
 			
 		}
 		else{
 			
-			//Add Connection
+			//Add Edge
 			
 			//Find out which nodes exist
 			ArrayList<Integer> nodes = new ArrayList<Integer>();
@@ -839,18 +893,30 @@ public class Breeder{
 			
 			boolean pos = random.nextBoolean();
 			
-			if(pos){
-				
-				double weight = (random.nextDouble() + .1)*genePos.getInnov();
-				Gene gene = new Gene(in, out, weight, genePos.getInnov());
-				genome.put(gene.getInnov(), gene);
+			if(!genome.containsKey(genePos.getInnov()) && !genome.containsKey(geneNeg.getInnov())){
+			
+				if(pos){
+					
+					double weight = (random.nextDouble() + .1)*genePos.getInnov();
+					Gene gene = new Gene(in, out, weight, genePos.getInnov());
+					genome.put(gene.getInnov(), gene);
+					
+				}
+				else{
+					
+					double weight = (random.nextDouble() + .1)*geneNeg.getInnov();
+					Gene gene = new Gene(in, out, weight, geneNeg.getInnov());
+					genome.put(gene.getInnov(), gene);
+					
+				}
 				
 			}
 			else{
 				
-				double weight = (random.nextDouble() + .1)*geneNeg.getInnov();
-				Gene gene = new Gene(in, out, weight, geneNeg.getInnov());
-				genome.put(gene.getInnov(), gene);
+				if(genome.containsKey(genePos.getInnov()))
+					genome.get(genePos.getInnov()).enable();
+				else
+					genome.get(geneNeg.getInnov()).enable();
 				
 			}
 			
@@ -868,7 +934,8 @@ public class Breeder{
 		
 		for(int i = 0; i < genes.length; i++){
 			
-			graph[genes[i].getIn()][genes[i].getOut()] = genes[i].getWeight();
+			if(genes[i].getEnabled())
+				graph[genes[i].getIn()][genes[i].getOut()] = genes[i].getWeight();
 			
 		}
 		
