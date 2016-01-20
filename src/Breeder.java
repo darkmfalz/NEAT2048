@@ -14,6 +14,7 @@ public class Breeder{
 	private HashMap<Integer, Organism> generation;
 	private HashMap<Integer, Double> tiers;
 	private Game game;
+	private boolean oneChildPolicy;
 	
 	public Breeder(int numOrgo){
 		
@@ -29,6 +30,8 @@ public class Breeder{
 		tiers = new HashMap<Integer, Double>();
 		
 		game = new Game();
+		
+		oneChildPolicy = false;
 		
 		makeFirstGen();
 		
@@ -102,9 +105,11 @@ public class Breeder{
 		
 		double[][] distanceMap = distanceMapFirstGen();
 		speciateFirstGen(distanceMap);
-		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));
-		oldNumOrgo = numOrgo;
+		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + numOrgo + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));oldNumOrgo = numOrgo;
 		fitness();
+		
+		if(generation.size() > 1000)
+			oneChildPolicy = true;
 		
 	}
 	
@@ -351,20 +356,30 @@ public class Breeder{
 				generation.put(organisms, child1);
 				organisms++;
 				
-				Organism child2 = makeChild(parent, parent2);
-				child2.setID(organisms);
-				generation.put(organisms, child2);
-				organisms++;
+				if(!oneChildPolicy){
+					
+					Organism child2 = makeChild(parent, parent2);
+					child2.setID(organisms);
+					generation.put(organisms, child2);
+					organisms++;
+					
+				}
 		
 			}
 			
 		}
 		
+		numOrgo = organisms;
 		generations++;
 		double[][] distanceMap = distanceMap(prevGeneration);
-		speciate(distanceMap);
-		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));
+		speciate(distanceMap, prevGeneration);
+		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + numOrgo + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));
 		fitness();
+		
+		if(generation.size() > 1000)
+			oneChildPolicy = true;
+		else
+			oneChildPolicy = false;
 		
 	}
 
@@ -372,9 +387,9 @@ public class Breeder{
 		
 		double[][] distanceMap = new double[numOrgo][oldNumOrgo];
 		
-		for(int i = 0; i < numOrgo; i++){
+		for(int i = 0; i < generation.size(); i++){
 			
-			for(int j = 0; j < oldNumOrgo; j++){
+			for(int j = 0; j < prevGeneration.size(); j++){
 			
 				HashMap<Integer, Gene> genomeI = generation.get(i).cloneGenome();
 				HashMap<Integer, Gene> genomeJ = prevGeneration.get(j).cloneGenome();
@@ -440,7 +455,7 @@ public class Breeder{
 		int size = queue.size();
 		for(int i = 0; i < size; i++){
 		
-			double limit = 1500.0/10000.0*numOrgo*oldNumOrgo;
+			double limit = 5000.0/10000.0*(double)(numOrgo*oldNumOrgo);
 			if(i == (int)limit)
 				delta = queue.poll();
 			else
@@ -448,11 +463,14 @@ public class Breeder{
 			
 		}
 		
+		//the rampant growth is a problem
+		delta = Math.max(2, delta);
+		
 		return distanceMap;
 		
 	}
 
-	private void speciate(double[][] distanceMap){
+	private void speciate(double[][] distanceMap, HashMap<Integer, Organism> prevGeneration){
 		
 		for(int i = 0; i < distanceMap.length; i++){
 			
@@ -468,11 +486,11 @@ public class Breeder{
 				
 				if(distanceMap[i][comp] <= delta){
 					
-					generation.get(i).setSpecies(generation.get(comp).getSpecies());
+					generation.get(i).setSpecies(prevGeneration.get(comp).getSpecies());
 					break;
 					
 				}
-				else if(j == i - 1)
+				else if(j == distanceMap[i].length - 1)
 					generation.get(i).setSpecies(speciesNum++);
 				
 			}
@@ -569,7 +587,7 @@ public class Breeder{
 		int minfitspec = 0;
 		int n = 100;
 		
-		for(int i = 0; i < numOrgo; i++){
+		for(int i = 0; i < generation.size(); i++){
 			
 			Brain brain = genoToPheno(generation.get(i).cloneGenome());
 			
@@ -677,7 +695,54 @@ public class Breeder{
 	
 	private Organism makeChild(Organism parent1, Organism parent2){
 		
-		return parent1.clone();
+		HashMap<Integer, Gene> genome1 = parent1.cloneGenome();
+		Gene[] genome1values = genome1.values().toArray(new Gene[0]);
+		HashMap<Integer, Gene> genome2 = parent2.cloneGenome();
+		Gene[] genome2values = genome2.values().toArray(new Gene[0]);
+		int N = Math.max(genome1.size(), genome2.size());
+		
+		HashMap<Integer, Gene> genome = new HashMap<Integer, Gene>();
+		Random random = new Random();
+		
+		for(int i = 0; i < genome1.size(); i++){
+			
+			for(int j = 0; j < genome2.size(); j++){
+				
+				if(genome1values[i].getInnov() == genome2values[j].getInnov()){
+					
+					boolean choice = random.nextBoolean();
+					
+					if(choice)
+						genome.put(genome1values[i].getInnov(), genome1values[i]);
+					else
+						genome.put(genome2values[j].getInnov(), genome2values[j]);
+					break;
+					
+				}
+				else if(parent1.getFitness() >= parent2.getFitness() && j == genome2.size() - 1)
+					genome.put(genome1values[i].getInnov(), genome1values[i]);
+				
+			}
+			
+		}
+		if(parent1.getFitness() < parent2.getFitness()){
+			
+			for(int i = 0; i < genome2.size(); i++){
+				
+				for(int j = 0; j < genome1.size(); j++){
+					
+					if(genome1values[j] != genome2values[i])
+						break;
+					else if(j == genome1.size() - 1)
+						genome.put(genome2values[i].getInnov(), genome2values[i]);
+					
+				}
+				
+			}
+			
+		}
+		
+		return new Organism(genome);
 		
 	}
 	

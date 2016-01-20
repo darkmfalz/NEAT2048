@@ -17,6 +17,16 @@ public class Organism{
 		
 	}
 	
+	public Organism(HashMap<Integer, Gene> genome){
+		
+		this.id = -1;
+		fitness = -1;
+		species = -1;
+		
+		this.genome = new HashMap<Integer, Gene>(genome);
+		
+	}
+	
 	public Organism(int id){
 		
 		this.id = id;
