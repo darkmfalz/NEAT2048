@@ -106,7 +106,7 @@ public class Breeder{
 		
 		double[][] distanceMap = distanceMapFirstGen();
 		speciateFirstGen(distanceMap);
-		//System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + numOrgo + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));oldNumOrgo = numOrgo;
+		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + numOrgo + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));oldNumOrgo = numOrgo;
 		fitness();
 		
 		if(generation.size() > 1000)
@@ -374,7 +374,7 @@ public class Breeder{
 		generations++;
 		double[][] distanceMap = distanceMap(prevGeneration);
 		speciate(distanceMap, prevGeneration);
-		//System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + numOrgo + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));
+		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + numOrgo + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));
 		fitness();
 		
 		if(generation.size() > 1000)
@@ -648,28 +648,32 @@ public class Breeder{
 		
 		maxFitness = generation.get(maxfitspec).getFitness();
 		
-		//System.out.println("Organism " + maxfitspec + ", Species " + generation.get(maxfitspec).getSpecies() + "\nfitness:" + generation.get(maxfitspec).getFitness() + "\ntopology:");
+		System.out.println("Organism " + maxfitspec + ", Species " + generation.get(maxfitspec).getSpecies() + "\nfitness:" + generation.get(maxfitspec).getFitness() + "\ntopology:");
 		double[][] fit = genoToPheno(generation.get(maxfitspec).cloneGenome()).getGraph().clone();
 		
-		/*System.out.print("{");
-		for(int i = 0; i < fit.length; i++){
-			
+		if(maxFitness > 200){
+		
 			System.out.print("{");
-			for(int j = 0; j < fit[i].length; j++){
+			for(int i = 0; i < fit.length; i++){
 				
-				if(j != fit[i].length - 1)
-					System.out.print(fit[i][j] + ",");
+				System.out.print("{");
+				for(int j = 0; j < fit[i].length; j++){
+					
+					if(j != fit[i].length - 1)
+						System.out.print(fit[i][j] + ",");
+					else
+						System.out.print(fit[i][j]);
+					
+				}
+				if(i != fit.length - 1)
+					System.out.print("},\n");
 				else
-					System.out.print(fit[i][j]);
+					System.out.print("}");
 				
 			}
-			if(i != fit.length - 1)
-				System.out.print("},\n");
-			else
-				System.out.print("}");
+			System.out.println("}");
 			
 		}
-		System.out.println("}");*/
 		
 		//Prints out the LEAST fit organism
 		/*System.out.println("Organism " + minfitspec + "\nfitness:" + fitness[minfitspec] + "\ntopology:");
@@ -703,7 +707,7 @@ public class Breeder{
 		Gene[] genome1values = genome1.values().toArray(new Gene[0]);
 		HashMap<Integer, Gene> genome2 = parent2.cloneGenome();
 		Gene[] genome2values = genome2.values().toArray(new Gene[0]);
-		int N = Math.max(genome1.size(), genome2.size());
+		//int N = Math.max(genome1.size(), genome2.size());
 		
 		HashMap<Integer, Gene> genome = new HashMap<Integer, Gene>();
 		Random random = new Random();
@@ -765,6 +769,9 @@ public class Breeder{
 		if(mutation){
 			
 			//Add Node
+			
+			Gene[] genomeKeys = genome.values().toArray(new Gene[0]);
+			
 			
 		}
 		else{
