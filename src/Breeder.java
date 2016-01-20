@@ -647,7 +647,7 @@ public class Breeder{
 		System.out.println("Organism " + maxfitspec + ", Species " + generation.get(maxfitspec).getSpecies() + "\nfitness:" + generation.get(maxfitspec).getFitness() + "\ntopology:");
 		double[][] fit = genoToPheno(generation.get(maxfitspec).cloneGenome()).getGraph().clone();
 		
-		System.out.print("{");
+		/*System.out.print("{");
 		for(int i = 0; i < fit.length; i++){
 			
 			System.out.print("{");
@@ -665,7 +665,7 @@ public class Breeder{
 				System.out.print("}");
 			
 		}
-		System.out.println("}");
+		System.out.println("}");*/
 		
 		//Prints out the LEAST fit organism
 		/*System.out.println("Organism " + minfitspec + "\nfitness:" + fitness[minfitspec] + "\ntopology:");
