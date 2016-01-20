@@ -8,7 +8,8 @@ public class Breeder{
 	private int nodes;
 	private int innovTotal;
 	public int generations;
-	public double maxFitness = 0;;
+	public double maxFitness = 0;
+	public double avgFitness = 0;
 	private double delta = 10;
 	private HashMap<Integer, Gene> geneList;
 	private HashMap<Integer, Organism> generation;
@@ -581,6 +582,8 @@ public class Breeder{
 	
 	private void fitness(){
 		
+		avgFitness = 0;
+		
 		double maxfit = 0;
 		int maxfitspec = 0;
 		double minfit = Double.MAX_VALUE;
@@ -624,6 +627,7 @@ public class Breeder{
 			}**/
 			
 			generation.get(i).setFitness(generation.get(i).getFitness()/n);
+			avgFitness += generation.get(i).getFitness()/generation.size();
 			//fitness[i] = fitness[i]/neighbors;
 			
 			if(generation.get(i).getFitness() > maxfit){
@@ -725,13 +729,14 @@ public class Breeder{
 			}
 			
 		}
+		
 		if(parent1.getFitness() < parent2.getFitness()){
 			
 			for(int i = 0; i < genome2.size(); i++){
 				
 				for(int j = 0; j < genome1.size(); j++){
 					
-					if(genome1values[j] != genome2values[i])
+					if(genome1values[j] == genome2values[i])
 						break;
 					else if(j == genome1.size() - 1)
 						genome.put(genome2values[i].getInnov(), genome2values[i]);
@@ -742,13 +747,109 @@ public class Breeder{
 			
 		}
 		
+		double mutate = random.nextDouble();
+		
+		if(mutate <= 0.25)
+			genome = mutate(genome);
+		
 		return new Organism(genome);
 		
 	}
 	
 	private HashMap<Integer, Gene> mutate(HashMap<Integer, Gene> genome){
 		
+		Random random = new Random();
+		boolean mutation = random.nextBoolean();
+		mutation = false;
 		
+		if(mutation){
+			
+			//Add Node
+			
+		}
+		else{
+			
+			//Add Connection
+			
+			//Find out which nodes exist
+			ArrayList<Integer> nodes = new ArrayList<Integer>();
+			Gene[] genomeKeys = genome.values().toArray(new Gene[0]);
+			
+			for(int i = 0; i < genomeKeys.length; i++){
+				
+				if(!nodes.contains(genomeKeys[i].getIn()))
+					nodes.add(genomeKeys[i].getIn());
+				if(!nodes.contains(genomeKeys[i].getOut()))
+					nodes.add(genomeKeys[i].getOut());
+				
+			}
+			
+			Integer[] nodesArr = nodes.toArray(new Integer[0]);
+			
+			int a = random.nextInt(nodes.size());
+			int b = random.nextInt(nodes.size() - 1);
+			if(b >= a)
+				b++;
+			int in = nodesArr[a];
+			int out = nodesArr[b];
+			
+			while(tiers.get(in) <= tiers.get(out)){
+				
+				a = random.nextInt(nodes.size());
+				b = random.nextInt(nodes.size() - 1);
+				if(b >= a)
+					b++;
+				in = nodesArr[a];
+				out = nodesArr[b];
+				
+			}
+			
+			Gene[] geneArr = geneList.values().toArray(new Gene[0]);
+			Gene genePos = new Gene(in, out, 1.0, innovTotal);
+			
+			for(int i = 0; i < geneArr.length; i++){
+				
+				if(geneArr[i].getIn() == in && geneArr[i].getOut() == out && geneArr[i].getWeight() > 0){
+					
+					genePos = geneArr[i];
+					break;
+				
+				}
+				
+			}
+			
+			Gene geneNeg = new Gene(in, out, -1.0, genePos.getInnov() + 1);
+			
+			if(genePos.getInnov() == innovTotal){
+				
+				geneList.put(genePos.getInnov(), genePos);
+				geneList.put(geneNeg.getInnov(), geneNeg);
+				
+				innovTotal++;
+				innovTotal++;
+			
+			}
+			
+			boolean pos = random.nextBoolean();
+			
+			if(pos){
+				
+				double weight = (random.nextDouble() + .1)*genePos.getInnov();
+				Gene gene = new Gene(in, out, weight, genePos.getInnov());
+				genome.put(gene.getInnov(), gene);
+				
+			}
+			else{
+				
+				double weight = (random.nextDouble() + .1)*geneNeg.getInnov();
+				Gene gene = new Gene(in, out, weight, geneNeg.getInnov());
+				genome.put(gene.getInnov(), gene);
+				
+			}
+			
+		}
+		
+		return genome;
 		
 	}
 	
