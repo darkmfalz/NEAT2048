@@ -15,12 +15,15 @@ public class BreederAlt{
 	public int generations;
 	public double maxFitness = 0;
 	public double avgFitness = 0;
+	public int maxNodes = 0;
 	private double delta = 10;
 	private HashMap<Integer, Gene> geneList;
 	private HashMap<Integer, Organism> generation;
 	private HashMap<Integer, Double> tiers;
 	private Game game;
 	private boolean oneChildPolicy;
+	
+	private double proprSpecies = 0.25;
 	
 	public BreederAlt(int numOrgo){
 		
@@ -182,7 +185,9 @@ public class BreederAlt{
 			
 		}
 		
+		//Need better delta selection
 		PriorityQueue<Double> queue = new PriorityQueue<Double>();
+		PriorityQueue<Double> queue2 = new PriorityQueue<Double>();
 		
 		for(int i = 0; i < distanceMap.length; i++){
 			
@@ -191,17 +196,25 @@ public class BreederAlt{
 				queue.add(distanceMap[i][j]);
 				
 			}
+			int size = queue.size();
+			for(int j = 0; j < size; j++){
+				
+				if(j < size*proprSpecies+1 && j > size*proprSpecies-1)
+					queue2.add(queue.poll());
+				else
+					queue.poll();
+				
+			}
 			
 		}
 		
-		int size = queue.size();
+		int size = queue2.size();
 		for(int i = 0; i < size; i++){
-		
-			double limit = 3000.0/10000.0*numOrgo*numOrgo;
-			if(i == (int)limit)
-				delta = queue.poll();
+	
+			if(i == (int)size/2)
+				delta = queue2.poll();
 			else
-				queue.poll();
+				queue2.poll();
 			
 		}
 		
@@ -463,7 +476,9 @@ public class BreederAlt{
 			
 		}
 		
+		//Need better delta selection
 		PriorityQueue<Double> queue = new PriorityQueue<Double>();
+		PriorityQueue<Double> queue2 = new PriorityQueue<Double>();
 		
 		for(int i = 0; i < distanceMap.length; i++){
 			
@@ -472,17 +487,25 @@ public class BreederAlt{
 				queue.add(distanceMap[i][j]);
 				
 			}
+			int size = queue.size();
+			for(int j = 0; j < size; j++){
+				
+				if(j < size*proprSpecies+1 && j > size*proprSpecies-1)
+					queue2.add(queue.poll());
+				else
+					queue.poll();
+				
+			}
 			
 		}
 		
-		int size = queue.size();
+		int size = queue2.size();
 		for(int i = 0; i < size; i++){
-		
-			double limit = 3000.0/10000.0*(double)(numOrgo*oldNumOrgo);
-			if(i == (int)limit)
-				delta = queue.poll();
+	
+			if(i == (int)size/2)
+				delta = queue2.poll();
 			else
-				queue.poll();
+				queue2.poll();
 			
 		}
 		
@@ -668,6 +691,7 @@ public class BreederAlt{
 		
 		maxFitness = maxfit;
 		
+		System.out.println("Max Number of Nodes:" + maxNodes);
 		System.out.println("Organism " + maxfitspec + ", Species " + generation.get(maxfitspec).getSpecies() + "\nfitness:" + maxFitness + "\ntopology:");
 		double[][] fit = genoToPheno(generation.get(maxfitspec).cloneGenome()).getGraph().clone();
 		
@@ -963,6 +987,8 @@ public class BreederAlt{
 				nodesL.add(genomeKeys[i].getOut());
 			
 		}
+		
+		maxNodes = Math.max(maxNodes, nodesL.size());
 		
 		double[][] graph = new double[nodesL.size()][nodesL.size()];
 		int[] vertices = new int[nodesL.size()];
