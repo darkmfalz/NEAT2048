@@ -1,8 +1,13 @@
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.PriorityQueue;
+import java.util.Random;
 
-public class Breeder{
+public class BreederAlt{
 
 	public int numOrgo;
+	private int maxOrgo = 2000;
 	private int oldNumOrgo;
 	private int speciesNum;
 	private int nodes;
@@ -17,7 +22,7 @@ public class Breeder{
 	private Game game;
 	private boolean oneChildPolicy;
 	
-	public Breeder(int numOrgo){
+	public BreederAlt(int numOrgo){
 		
 		this.numOrgo = numOrgo;
 		oldNumOrgo = numOrgo;
@@ -107,9 +112,10 @@ public class Breeder{
 		double[][] distanceMap = distanceMapFirstGen();
 		speciateFirstGen(distanceMap);
 		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + numOrgo + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));oldNumOrgo = numOrgo;
-		fitness();
+		distanceMap = distanceMapFirstGen();
+		fitness(distanceMap);
 		
-		if(generation.size() > 1000)
+		if(generation.size() > maxOrgo)
 			oneChildPolicy = true;
 		
 	}
@@ -191,13 +197,15 @@ public class Breeder{
 		int size = queue.size();
 		for(int i = 0; i < size; i++){
 		
-			double limit = 1500.0/10000.0*numOrgo*oldNumOrgo;
+			double limit = 3000.0/10000.0*numOrgo*numOrgo;
 			if(i == (int)limit)
 				delta = queue.poll();
 			else
 				queue.poll();
 			
 		}
+		
+		delta = Math.min(delta, Integer.MAX_VALUE/2);
 		
 		return distanceMap;
 		
@@ -318,39 +326,43 @@ public class Breeder{
 		oldNumOrgo = prevGeneration.size();
 		generation.clear();
 		
-		for(int i = 0; i < speciesNum; i++){
-
-			Comparator<Organism> fitnessComparator = new Comparator<Organism>(){
-				@Override
-				public int compare(Organism o1, Organism o2){
-					return -1*Double.compare(o1.getFitness(), o2.getFitness());
-					}
-				};
-				
-			PriorityQueue<Organism> fitnessQueue = new PriorityQueue<Organism>(fitnessComparator);
+		Comparator<Organism> fitnessComparator = new Comparator<Organism>(){
+			@Override
+			public int compare(Organism o1, Organism o2){
+				return -1*Double.compare(o1.getFitness(), o2.getFitness());
+				}
+			};
 			
-			for(int j = 0; j < prevGeneration.size(); j++)
-				if(prevGeneration.get(j).getSpecies() == i)
-					fitnessQueue.add(prevGeneration.get(j));
-
-			Organism[] fit = new Organism[fitnessQueue.size()/2];
-			for(int j = 0; j < fit.length; j++)
-				fit[j] = fitnessQueue.poll();
+		PriorityQueue<Organism> fitnessQueue = new PriorityQueue<Organism>(fitnessComparator);
+		
+		for(int i = 0; i < prevGeneration.size(); i++)
+			fitnessQueue.add(prevGeneration.get(i));
+		
+		Organism[] orgo = new Organism[prevGeneration.size()/2 + 1];
+		for(int i = 0; i < orgo.length; i++)
+			orgo[i] = fitnessQueue.poll();
+		
+		Random random = new Random();
+		for(int i = 0; i < orgo.length; i++){
 			
-			Random random = new Random();
-			for(int j = 0; j < fit.length; j++){
+			ArrayList<Organism> species = new ArrayList<Organism>();
+			for(int j = 0; j < orgo.length; j++)
+				if(orgo[i].getSpecies() == orgo[j].getSpecies())
+					species.add(orgo[j]);
+					
+			if(species.size() > 1){
 				
-				Organism parent = fit[j];
+				Organism parent = orgo[i];
 				
-				int parentID1 = random.nextInt(fit.length - 1);
-				if(parentID1 >= j)
-					parentID1++;
-				Organism parent1 = fit[parentID1];
+				int parentID1 = random.nextInt(species.size());
+				while(species.get(parentID1).getID() == orgo[i].getSpecies())
+					parentID1 = random.nextInt(species.size());
+				Organism parent1 = species.get(parentID1);
 				
-				int parentID2 = random.nextInt(fit.length - 1);
-				if(parentID2 >= j)
-					parentID2++;
-				Organism parent2 = fit[parentID2];
+				int parentID2 = random.nextInt(species.size());
+				while(species.get(parentID2).getID() == orgo[i].getSpecies())
+					parentID2 = random.nextInt(species.size());
+				Organism parent2 = species.get(parentID2);
 				
 				Organism child1 = makeChild(parent, parent1);
 				child1.setID(organisms);
@@ -365,9 +377,19 @@ public class Breeder{
 					organisms++;
 					
 				}
-		
+				
 			}
-			
+			else{
+				
+				Organism parent = orgo[i];
+				
+				Organism child1 = makeChild(parent, parent.clone());
+				child1.setID(organisms);
+				generation.put(organisms, child1);
+				organisms++;
+				
+			}
+				
 		}
 		
 		numOrgo = organisms;
@@ -375,9 +397,9 @@ public class Breeder{
 		double[][] distanceMap = distanceMap(prevGeneration);
 		speciate(distanceMap, prevGeneration);
 		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + numOrgo + ", Species:" + speciesNum + ", Growth:" + (numOrgo - oldNumOrgo));
-		fitness();
+		fitness(distanceMapFirstGen());
 		
-		if(generation.size() > 1000)
+		if(generation.size() > maxOrgo)
 			oneChildPolicy = true;
 		else
 			oneChildPolicy = false;
@@ -456,7 +478,7 @@ public class Breeder{
 		int size = queue.size();
 		for(int i = 0; i < size; i++){
 		
-			double limit = 5000.0/10000.0*(double)(numOrgo*oldNumOrgo);
+			double limit = 3000.0/10000.0*(double)(numOrgo*oldNumOrgo);
 			if(i == (int)limit)
 				delta = queue.poll();
 			else
@@ -464,8 +486,7 @@ public class Breeder{
 			
 		}
 		
-		//the rampant growth is a problem
-		delta = Math.max(2, delta);
+		delta = Math.min(delta, Integer.MAX_VALUE/2);
 		
 		return distanceMap;
 		
@@ -580,7 +601,7 @@ public class Breeder{
 		
 	}
 	
-	private void fitness(){
+	private void fitness(double[][] distanceMap){
 		
 		avgFitness = 0;
 		
@@ -617,19 +638,8 @@ public class Breeder{
 				
 			}
 			
-			/*int neighbors = 0;
-			
-			for(int j = 0; j < oldNumOrgo; j++){
-				
-				if(distanceMap[i][j] <= delta)
-					neighbors++;
-				
-			}*/
-			
 			generation.get(i).setFitness(generation.get(i).getFitness()/n);
 			avgFitness += generation.get(i).getFitness()/generation.size();
-			//fitness[i] = fitness[i]/neighbors;
-			
 			if(generation.get(i).getFitness() > maxfit){
 				
 				maxfit = generation.get(i).getFitness();
@@ -643,12 +653,22 @@ public class Breeder{
 				minfitspec = i;
 				
 			}
+
+			int neighbors = 0;
+			
+			for(int j = 0; j < numOrgo; j++){
+				
+				if(distanceMap[i][j] <= delta)
+					neighbors++;
+				
+			}
+			generation.get(i).setFitness(generation.get(i).getFitness()/neighbors);
 			
 		}
 		
-		maxFitness = generation.get(maxfitspec).getFitness();
+		maxFitness = maxfit;
 		
-		System.out.println("Organism " + maxfitspec + ", Species " + generation.get(maxfitspec).getSpecies() + "\nfitness:" + generation.get(maxfitspec).getFitness() + "\ntopology:");
+		System.out.println("Organism " + maxfitspec + ", Species " + generation.get(maxfitspec).getSpecies() + "\nfitness:" + maxFitness + "\ntopology:");
 		double[][] fit = genoToPheno(generation.get(maxfitspec).cloneGenome()).getGraph().clone();
 		
 		if(maxFitness > 2000){
@@ -769,7 +789,7 @@ public class Breeder{
 		
 		double mutate = random.nextDouble();
 		
-		if(mutate <= 0.375)
+		if(mutate <= 0.3)
 			genome = mutate(genome);
 		
 		return new Organism(genome);
@@ -779,7 +799,7 @@ public class Breeder{
 	private HashMap<Integer, Gene> mutate(HashMap<Integer, Gene> genome){
 		
 		Random random = new Random();
-		int mutation = random.nextInt(3);
+		int mutation = random.nextInt(2);
 		//mutation = true;
 		
 		if(mutation == 0){
@@ -989,7 +1009,6 @@ public class Breeder{
  		
  	}
  	
-
 	public int[] shuffleArray(int[] ar){
 		
 		Random rnd = new Random();
@@ -1008,7 +1027,6 @@ public class Breeder{
 		
 	}
 	
-	
 	public double[][] removeRow(double[][] array, int row){
 		
 		double[][] newArray = new double[array.length - 1][];
@@ -1025,8 +1043,7 @@ public class Breeder{
 		return newArray;
 		
 	}
-	
-	
+
 	public double[][] removeColumn(double[][] array, int column){
 		
 		double[][] newArray = new double[array.length][array[0].length - 1];
@@ -1048,5 +1065,4 @@ public class Breeder{
 		
 	}
 	
-
 }

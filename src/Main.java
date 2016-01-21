@@ -2,9 +2,9 @@ public class Main {
 
 	public static void main(String[] args){
 		
-		Breeder breeder = new Breeder(100);
+		BreederAlt breeder = new BreederAlt(1000);
 
-		while(breeder.generations < 100)
+		while(breeder.maxFitness < 2500)
 			breeder.breedNextGen();
 		
 	}
