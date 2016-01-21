@@ -3,6 +3,7 @@ import java.util.Random;
 public class Game {
 	
 	private int[][] board;
+	public int score = 0;
 	public boolean canWin;
 	
 	public Game(){
@@ -24,6 +25,7 @@ public class Game {
 	public void resetBoard(){
 		
 		board = new int[4][4];
+		score = 0;
 		canWin = true;
 		
 		addNum();
@@ -229,6 +231,8 @@ public class Game {
 						board[i][j] = board[i][j] + board[i][j + 1]; 
 						board[i][j + 1] = 0;
 						
+						score += board[i][j];
+						
 					}
 					
 				}
@@ -274,6 +278,8 @@ public class Game {
 						
 						board[i][j] = board[i][j] + board[i][j - 1]; 
 						board[i][j - 1] = 0;
+						
+						score += board[i][j];
 						
 					}
 					
@@ -321,6 +327,8 @@ public class Game {
 						board[j][i] = board[j][i] + board[j + 1][i]; 
 						board[j + 1][i] = 0;
 						
+						score += board[j][i];
+						
 					}
 					
 				}
@@ -366,6 +374,8 @@ public class Game {
 						
 						board[j][i] = board[j][i] + board[j - 1][i]; 
 						board[j - 1][i] = 0;
+						
+						score += board[j][i];
 						
 					}
 					

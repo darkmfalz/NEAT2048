@@ -646,7 +646,7 @@ public class BreederAlt{
 					
 					int[][] boardB4 = game.getBoard().clone();
 					
-					score = game.sumAll();
+					score = game.score;
 					
 					game.move(brain.brainMove(game.getBoard()));
 					
