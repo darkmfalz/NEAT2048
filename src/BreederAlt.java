@@ -161,6 +161,12 @@ public class BreederAlt{
 								Wn += Math.abs(genomeI.get((Integer)keysI[a]).getWeight() - genomeJ.get((Integer)keysJ[b]).getWeight());
 								
 							}
+							else if(genomeI.get(keysI[a]).getIn() == genomeJ.get(keysJ[b]).getIn() && genomeI.get(keysI[a]).getOut() == genomeJ.get(keysJ[b]).getOut()){
+								
+								n++;
+								Wn += Math.abs(genomeI.get(keysI[a]).getWeight() - genomeJ.get(keysJ[b]).getWeight());
+								
+							}
 							
 						}
 						
@@ -432,8 +438,8 @@ public class BreederAlt{
 				
 				int N = Math.max(genomeI.size(), genomeJ.size());
 				
-				Object[] keysI = genomeI.keySet().toArray();
-				Object[] keysJ = genomeJ.keySet().toArray();
+				Integer[] keysI = genomeI.keySet().toArray(new Integer[0]);
+				Integer[] keysJ = genomeJ.keySet().toArray(new Integer[0]);
 				
 				double Wn = 0;
 				double n = 0;
@@ -449,10 +455,16 @@ public class BreederAlt{
 						maxI = (double) Math.max((Integer)keysI[a], maxI);
 						maxJ = (double) Math.max((Integer)keysJ[b], maxJ);
 						
-						if((Integer)keysI[a] == (Integer)keysJ[b]){
+						if(keysI[a] == keysJ[b]){
 							
 							n++;
-							Wn += Math.abs(genomeI.get((Integer)keysI[a]).getWeight() - genomeJ.get((Integer)keysJ[b]).getWeight());
+							Wn += Math.abs(genomeI.get(keysI[a]).getWeight() - genomeJ.get(keysJ[b]).getWeight());
+							
+						}
+						else if(genomeI.get(keysI[a]).getIn() == genomeJ.get(keysJ[b]).getIn() && genomeI.get(keysI[a]).getOut() == genomeJ.get(keysJ[b]).getOut()){
+							
+							n++;
+							Wn += Math.abs(genomeI.get(keysI[a]).getWeight() - genomeJ.get(keysJ[b]).getWeight());
 							
 						}
 						
@@ -652,8 +664,10 @@ public class BreederAlt{
 					game.move(brain.brainMove(game.getBoard()));
 					
 					//If it doesn't make a move that changes anything
-					while(boardB4.equals(game.getBoard()))
-						game.move(random.nextInt(4));
+					//while(boardB4.equals(game.getBoard()))
+					//	game.move(random.nextInt(4));
+					if(boardB4.equals(game.getBoard()))
+						break;
 					
 				}
 				score += generation.get(i).getFitness();
