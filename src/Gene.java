@@ -64,6 +64,12 @@ public class Gene {
 		
 	}
 	
+	public void setInnov(int innov){
+		
+		this.innovNum = innov;
+		
+	}
+	
 	public Gene clone(){
 		
 		Gene gene = new Gene(in, out, weight, innovNum);

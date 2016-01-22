@@ -138,8 +138,8 @@ public class BreederAlt{
 					
 					int N = Math.max(genomeI.size(), genomeJ.size());
 					
-					Object[] keysI = genomeI.keySet().toArray();
-					Object[] keysJ = genomeJ.keySet().toArray();
+					Integer[] keysI = genomeI.keySet().toArray(new Integer[0]);
+					Integer[] keysJ = genomeJ.keySet().toArray(new Integer[0]);
 					
 					double Wn = 0;
 					double n = 0;
@@ -148,17 +148,19 @@ public class BreederAlt{
 					double maxI = 0;
 					double maxJ = 0;
 					
+					for(int a = 0; a < genomeI.size(); a++)
+						maxI = (double) Math.max(keysI[a], maxI);
+					for(int b = 0; b < genomeJ.size(); b++)
+						maxJ = (double) Math.max(keysJ[b], maxJ);
+					
 					for(int a = 0; a < genomeI.size(); a++){
 						
 						for(int b = 0; b < genomeJ.size(); b++){
 							
-							maxI = (double) Math.max((Integer)keysI[a], maxI);
-							maxJ = (double) Math.max((Integer)keysJ[b], maxJ);
-							
-							if((Integer)keysI[a] == (Integer)keysJ[b]){
+							if(keysI[a] == keysJ[b]){
 								
 								n++;
-								Wn += Math.abs(genomeI.get((Integer)keysI[a]).getWeight() - genomeJ.get((Integer)keysJ[b]).getWeight());
+								Wn += Math.abs(genomeI.get(keysI[a]).getWeight() - genomeJ.get(keysJ[b]).getWeight());
 								
 							}
 							else if(genomeI.get(keysI[a]).getIn() == genomeJ.get(keysJ[b]).getIn() && genomeI.get(keysI[a]).getOut() == genomeJ.get(keysJ[b]).getOut()){
@@ -167,18 +169,21 @@ public class BreederAlt{
 								Wn += Math.abs(genomeI.get(keysI[a]).getWeight() - genomeJ.get(keysJ[b]).getWeight());
 								
 							}
+							else if(keysI[a] > maxJ)
+								E++;
+							else if(keysJ[b] > maxI)
+								E++;
 							
 						}
 						
 					}
 					
-					E = Math.abs(maxI - maxJ);
-					D = Math.min(maxI, maxJ) - n;
+					D = Math.min(genomeI.size(), genomeJ.size()) - n;
 					
 					double W;
 					
 					if(n == 0)
-						W = Integer.MAX_VALUE;
+						W = 5;
 					else
 						W = Wn/n;
 					
@@ -217,7 +222,7 @@ public class BreederAlt{
 		int size = queue2.size();
 		for(int i = 0; i < size; i++){
 	
-			if(i == (int)size/2)
+			if(i == (int)(size*proprSpecies))
 				delta = queue2.poll();
 			else
 				queue2.poll();
@@ -448,12 +453,14 @@ public class BreederAlt{
 				double maxI = 0;
 				double maxJ = 0;
 				
+				for(int a = 0; a < genomeI.size(); a++)
+					maxI = (double) Math.max(keysI[a], maxI);
+				for(int b = 0; b < genomeJ.size(); b++)
+					maxJ = (double) Math.max(keysJ[b], maxJ);
+				
 				for(int a = 0; a < genomeI.size(); a++){
 					
 					for(int b = 0; b < genomeJ.size(); b++){
-						
-						maxI = (double) Math.max((Integer)keysI[a], maxI);
-						maxJ = (double) Math.max((Integer)keysJ[b], maxJ);
 						
 						if(keysI[a] == keysJ[b]){
 							
@@ -467,18 +474,21 @@ public class BreederAlt{
 							Wn += Math.abs(genomeI.get(keysI[a]).getWeight() - genomeJ.get(keysJ[b]).getWeight());
 							
 						}
+						else if(keysI[a] > maxJ)
+							E++;
+						else if(keysJ[b] > maxI)
+							E++;
 						
 					}
 					
 				}
 				
-				E = Math.abs(maxI - maxJ);
-				D = Math.min(maxI, maxJ) - n;
+				D = Math.min(genomeI.size(), genomeJ.size()) - n;
 				
 				double W;
 				
 				if(n == 0)
-					W = Integer.MAX_VALUE;
+					W = 5;
 				else
 					W = Wn/n;
 				
@@ -692,7 +702,7 @@ public class BreederAlt{
 				
 			}
 
-			int neighbors = 0;
+			double neighbors = 0;
 			
 			for(int j = 0; j < numOrgo; j++){
 				
@@ -700,7 +710,7 @@ public class BreederAlt{
 					neighbors++;
 				
 			}
-			generation.get(i).setFitness(generation.get(i).getFitness()/neighbors);
+			//generation.get(i).setFitness(generation.get(i).getFitness()/neighbors);
 			
 		}
 		
@@ -828,20 +838,29 @@ public class BreederAlt{
 		
 		double mutate = random.nextDouble();
 		
-		if(mutate <= 0.3)
-			genome = mutate(genome);
+		if((mutate <= 0.4 && !oneChildPolicy) || genome.size() == 0)
+			genome = mutateAdd(genome);
+		/*else if(mutate > 0.3 && mutate <= 0.35 && !oneChildPolicy && genome.size() > 0)
+			genome = mutateSub(genome);
+		
+		mutate = random.nextDouble();
+		
+		if(mutate <= 0.25 && genome.size() > 0)
+			genome = mutateEnable(genome);
+		else if(mutate > 0.25 && mutate <= 0.3 && !oneChildPolicy && genome.size() > 0)
+			genome = mutateDisable(genome);*/
 		
 		return new Organism(genome);
 		
 	}
 	
-	private HashMap<Integer, Gene> mutate(HashMap<Integer, Gene> genome){
+	private HashMap<Integer, Gene> mutateAdd(HashMap<Integer, Gene> genome){
 		
 		Random random = new Random();
-		int mutation = random.nextInt(2);
+		int mutation = random.nextInt(3);
 		//mutation = true;
 		
-		if(mutation == 0){
+		if(mutation == 0 && genome.size() > 0){
 			
 			//Add Node
 			
@@ -887,7 +906,7 @@ public class BreederAlt{
 			}
 			
 		}
-		else{
+		else if(mutation == 1 && genome.size() > 0){
 			
 			//Add Edge
 			
@@ -979,6 +998,200 @@ public class BreederAlt{
 				
 			}
 			
+		}
+		else if(mutation == 2 && genome.size() > 0){
+			
+			//Perturb weights
+			Gene[] geneKeys = genome.values().toArray(new Gene[0]);
+			
+			Gene gene = geneKeys[random.nextInt(geneKeys.length)];
+			genome.remove(gene.getInnov());
+			
+			double perturb = random.nextGaussian();
+			if(Math.abs(perturb) < 1)
+				gene.setWeight(gene.getWeight() + random.nextGaussian());
+			else
+				gene.setWeight(random.nextDouble()*2 - 1);
+			
+			if(gene.getWeight() < 0 && gene.getInnov() % 2 == 0)
+				gene.setInnov(gene.getInnov() + 1);
+			else if(gene.getWeight() > 0 && gene.getInnov() % 2 == 1)
+				gene.setInnov(gene.getInnov() - 1);
+			
+			genome.put(gene.getInnov(), gene);
+			
+			/*ArrayList<Gene> inputGenes = new ArrayList<Gene>();
+			for(int i = 0; i < geneKeys.length; i++)
+				if(geneKeys[i].getOut() < 20 && geneKeys[i].getOut() >= 4)
+					inputGenes.add(geneKeys[i]);
+			
+			if(inputGenes.size() > 0){
+			
+				int geneIndex = random.nextInt(inputGenes.size());
+				
+				Gene gene = inputGenes.get(geneIndex);
+				genome.remove(gene.getInnov());
+				
+				double perturb = random.nextGaussian();
+				if(Math.abs(perturb) < 1)
+					gene.setWeight(gene.getWeight() + random.nextGaussian());
+				else
+					gene.setWeight(random.nextDouble()*2 - 1);
+				
+				if(gene.getWeight() < 0 && gene.getInnov() % 2 == 0)
+					gene.setInnov(gene.getInnov() + 1);
+				else if(gene.getWeight() > 0 && gene.getInnov() % 2 == 1)
+					gene.setInnov(gene.getInnov() - 1);
+				
+				genome.put(gene.getInnov(), gene);
+				
+				int out = gene.getIn();
+				
+				while(out > 3){
+					
+					for(int i = 0; i < geneKeys.length; i++)
+						if(geneKeys[i].getOut() == out)
+							gene = geneKeys[i];
+					
+					genome.remove(gene.getInnov());
+					
+					perturb = random.nextGaussian();
+					if(Math.abs(perturb) < 1)
+						gene.setWeight(gene.getWeight() + random.nextGaussian());
+					else
+						gene.setWeight(random.nextDouble()*2 - 1);
+					
+					if(gene.getWeight() < 0 && gene.getInnov() % 2 == 0)
+						gene.setInnov(gene.getInnov() + 1);
+					else if(gene.getWeight() > 0 && gene.getInnov() % 2 == 1)
+						gene.setInnov(gene.getInnov() - 1);
+					
+					genome.put(gene.getInnov(), gene);
+					
+					out = gene.getIn();
+					
+				}
+			
+			}*/
+			
+		}
+		else{
+			
+			Gene[] genes = geneList.values().toArray(new Gene[0]);
+			int index = random.nextInt(128);
+			Gene gene = genes[index].clone();
+			gene.setWeight(gene.getWeight()*(random.nextDouble() + .1));
+			genome.put(gene.getInnov(), gene);
+			
+		}
+		
+		return genome;
+		
+	}
+	
+	private HashMap<Integer, Gene> mutateSub(HashMap<Integer, Gene> genome){
+		
+		Random random = new Random();
+		int mutation = random.nextInt(2);
+		//mutation = true;
+		
+		if(mutation == 0 && genome.size() > 0){
+			
+			//Remove Node
+			
+			//Find out which nodes exist
+			ArrayList<Integer> nodes = new ArrayList<Integer>();
+			Gene[] genomeKeys = genome.values().toArray(new Gene[0]);
+			
+			for(int i = 0; i < genomeKeys.length; i++){
+				
+				if(!nodes.contains(genomeKeys[i].getIn()) && genomeKeys[i].getIn() >= 20)
+					nodes.add(genomeKeys[i].getIn());
+				if(!nodes.contains(genomeKeys[i].getOut()) && genomeKeys[i].getOut() >= 20)
+					nodes.add(genomeKeys[i].getOut());
+				
+			}
+			
+			if(nodes.size() > 0 && genome.size() > 0){
+				
+				Integer[] nodesArr = nodes.toArray(new Integer[0]);
+				
+				int node = nodesArr[random.nextInt(nodesArr.length)];
+				for(int i = 0; i < genomeKeys.length; i++){
+					
+					if(genomeKeys[i].getIn() == node || genomeKeys[i].getOut() == node)
+						genome.remove(genomeKeys[i]);
+					
+				}
+				
+			}
+			
+		}
+		else if(genome.size() > 0){
+			
+			//Remove Edge
+			
+			Gene[] genomeKeys = genome.values().toArray(new Gene[0]);
+			genome.remove(genomeKeys[random.nextInt(genomeKeys.length)].getInnov());
+			
+		}
+		
+		return genome;
+		
+	}
+
+	private HashMap<Integer, Gene> mutateEnable(HashMap<Integer, Gene> genome){
+		
+		Random random = new Random();
+		
+		ArrayList<Gene> disabledGenes = new ArrayList<Gene>();
+		
+		Gene[] genes = genome.values().toArray(new Gene[0]);
+		for(int i = 0; i < genes.length; i++){
+			
+			if(!genes[i].getEnabled())
+				disabledGenes.add(genes[i]);
+			
+		}
+		
+		if(disabledGenes.size() > 0){
+		
+			int geneIndex = random.nextInt(disabledGenes.size());
+			Gene gene = disabledGenes.get(geneIndex);
+			
+			genome.remove(gene.getInnov());
+			gene.enable();
+			genome.put(gene.getInnov(), gene);
+		
+		}
+		
+		return genome;
+		
+	}
+	
+	private HashMap<Integer, Gene> mutateDisable(HashMap<Integer, Gene> genome){
+		
+		Random random = new Random();
+		
+		ArrayList<Gene> enabledGenes = new ArrayList<Gene>();
+		
+		Gene[] genes = genome.values().toArray(new Gene[0]);
+		for(int i = 0; i < genes.length; i++){
+			
+			if(genes[i].getEnabled())
+				enabledGenes.add(genes[i]);
+			
+		}
+		
+		if(enabledGenes.size() > 0){
+		
+			int geneIndex = random.nextInt(enabledGenes.size());
+			Gene gene = enabledGenes.get(geneIndex);
+			
+			genome.remove(gene.getInnov());
+			gene.disable();
+			genome.put(gene.getInnov(), gene);
+		
 		}
 		
 		return genome;
