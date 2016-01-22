@@ -7,7 +7,7 @@ import java.util.Random;
 public class BreederAlt{
 
 	public int numOrgo;
-	private int maxOrgo = 2000;
+	private int maxOrgo = 3000;
 	private int oldNumOrgo;
 	private int speciesNum;
 	private int nodes;
