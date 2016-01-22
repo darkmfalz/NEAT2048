@@ -4,7 +4,7 @@ public class Main {
 		
 		BreederAlt breeder = new BreederAlt(1000);
 
-		while(breeder.maxFitness < 2500)
+		while(breeder.maxFitness < 25000)
 			breeder.breedNextGen();
 		
 	}

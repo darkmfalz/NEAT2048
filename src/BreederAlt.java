@@ -638,6 +638,7 @@ public class BreederAlt{
 			
 			Brain brain = genoToPheno(generation.get(i).cloneGenome());
 			
+			Random random = new Random();
 			for(int j = 0; j < n; j++){
 				
 				int score = 0;
@@ -652,7 +653,7 @@ public class BreederAlt{
 					
 					//If it doesn't make a move that changes anything
 					if(boardB4.equals(game.getBoard()))
-						break;
+						game.move(random.nextInt(4));
 					
 				}
 				score += generation.get(i).getFitness();
