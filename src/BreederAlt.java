@@ -652,7 +652,7 @@ public class BreederAlt{
 					game.move(brain.brainMove(game.getBoard()));
 					
 					//If it doesn't make a move that changes anything
-					if(boardB4.equals(game.getBoard()))
+					while(boardB4.equals(game.getBoard()))
 						game.move(random.nextInt(4));
 					
 				}
