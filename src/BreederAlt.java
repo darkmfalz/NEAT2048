@@ -710,7 +710,7 @@ public class BreederAlt{
 					neighbors++;
 				
 			}
-			//generation.get(i).setFitness(generation.get(i).getFitness()/neighbors);
+			generation.get(i).setFitness(generation.get(i).getFitness()/neighbors);
 			
 		}
 		
