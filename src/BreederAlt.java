@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.PriorityQueue;
@@ -169,9 +170,9 @@ public class BreederAlt{
 								Wn += Math.abs(genomeI.get(keysI[a]).getWeight() - genomeJ.get(keysJ[b]).getWeight());
 								
 							}
-							else if(keysI[a] > maxJ)
+							else if(keysI[a] > maxJ && b == 0)
 								E++;
-							else if(keysJ[b] > maxI)
+							else if(keysJ[b] > maxI && a == 0)
 								E++;
 							
 						}
@@ -183,12 +184,14 @@ public class BreederAlt{
 					double W;
 					
 					if(n == 0)
-						W = 5;
+						W = Double.MAX_VALUE;
 					else
 						W = Wn/n;
 					
 					distanceMap[i][j] = E/N + D/N + W;
 					distanceMap[j][i] = distanceMap[i][j];
+					if(E/N > 1 || D/N > 1)
+						System.out.println("E:" + E + " D:" + D + " W:" + W + " N:" + N);
 					
 				}
 				
@@ -432,7 +435,7 @@ public class BreederAlt{
 
 	private double[][] distanceMap(HashMap<Integer, Organism> prevGeneration){
 		
-		double[][] distanceMap = new double[numOrgo][oldNumOrgo];
+		double[][] distanceMap = new double[generation.size()][prevGeneration.size()];
 		
 		for(int i = 0; i < generation.size(); i++){
 			
@@ -474,9 +477,9 @@ public class BreederAlt{
 							Wn += Math.abs(genomeI.get(keysI[a]).getWeight() - genomeJ.get(keysJ[b]).getWeight());
 							
 						}
-						else if(keysI[a] > maxJ)
+						else if(keysI[a] > maxJ && b == 0)
 							E++;
-						else if(keysJ[b] > maxI)
+						else if(keysJ[b] > maxI && a == 0)
 							E++;
 						
 					}
@@ -488,11 +491,13 @@ public class BreederAlt{
 				double W;
 				
 				if(n == 0)
-					W = 5;
+					W = Double.MAX_VALUE;
 				else
 					W = Wn/n;
 				
 				distanceMap[i][j] = E/N + D/N + W;
+				if(E/N > 1 || D/N > 1)
+					System.out.println("E:" + E + " D:" + D + " W:" + W + " N:" + N);
 				
 			}
 			
@@ -553,6 +558,9 @@ public class BreederAlt{
 				
 				if(distanceMap[i][comp] <= delta){
 					
+					if(prevGeneration.get(comp).getSpecies() < 0)
+						System.out.println("hitp");
+					
 					generation.get(i).setSpecies(prevGeneration.get(comp).getSpecies());
 					break;
 					
@@ -561,6 +569,9 @@ public class BreederAlt{
 					generation.get(i).setSpecies(speciesNum++);
 				
 			}
+			
+			if(generation.get(i).getSpecies() < 0)
+				System.out.println("hit");
 			
 		}
 		
@@ -571,18 +582,63 @@ public class BreederAlt{
 		for(int i = 0; i < speciesN.length; i++){
 			
 			//if there are an odd number of organisms
-			//randomly clone
+			//randomly breed another
 			if(speciesN[i] % 2 == 1){
 				
-				int randID = random.nextInt(generation.size());
-				while(generation.get(randID).getSpecies() != i)
-					randID = random.nextInt(generation.size() - 1);
-				Organism twin = generation.get(randID).clone();
-				twin.setID(numOrgo);
-				generation.put(numOrgo, twin);
+				ArrayList<Organism> lastGenSpecies = new ArrayList<Organism>();
+				for(int j = 0; j < prevGeneration.size(); j++)
+					if(prevGeneration.get(j).getSpecies() == i)
+						lastGenSpecies.add(prevGeneration.get(j));
 				
-				numOrgo++;
-				speciesN[i]++;
+				if(lastGenSpecies.size() > 0){
+					
+					Collections.shuffle(lastGenSpecies);
+					
+					Organism parent1 = lastGenSpecies.get(0);
+					Organism parent2;
+					if(lastGenSpecies.size() > 1)
+						parent2 = lastGenSpecies.get(1);
+					else
+						parent2 = parent1.clone();
+					
+					Organism child = makeChild(parent1, parent2);
+					child.setID(numOrgo);
+					child.setSpecies(i);
+					generation.put(numOrgo, child);
+					
+					numOrgo++;
+					speciesN[i]++;
+					
+				}
+				else{
+					
+					ArrayList<Organism> thisGenSpecies = new ArrayList<Organism>();
+					for(int j = 0; j < generation.size(); j++)
+						if(generation.get(j).getSpecies() == i)
+							thisGenSpecies.add(generation.get(j));
+					
+					if(thisGenSpecies.size() > 0){
+						
+						Collections.shuffle(thisGenSpecies);
+						
+						Organism parent1 = thisGenSpecies.get(0);
+						Organism parent2;
+						if(thisGenSpecies.size() > 1)
+							parent2 = thisGenSpecies.get(1);
+						else
+							parent2 = parent1.clone();
+						
+						Organism child = makeChild(parent1, parent2);
+						child.setID(numOrgo);
+						child.setSpecies(i);
+						generation.put(numOrgo, child);
+						
+						numOrgo++;
+						speciesN[i]++;
+						
+					}
+					
+				}
 				
 			}
 			
@@ -621,24 +677,63 @@ public class BreederAlt{
 		//Or, instead, add the necessary number to continue the existence of species
 		for(int i = 0; i < speciesN.length; i++){
 			
+			ArrayList<Organism> lastGenSpecies = new ArrayList<Organism>();
+			for(int j = 0; j < prevGeneration.size(); j++)
+				if(prevGeneration.get(j).getSpecies() == i)
+					lastGenSpecies.add(prevGeneration.get(j));
 			//if there are an odd number of organisms
-			//randomly clone
+			//randomly breed another
 			while(speciesN[i] < 4 && speciesN[i] > 0){
 				
-				int[] speciesArr = new int[speciesN[i]];
-				int counter = 0;
-				for(int j = 0; j < generation.size(); j++)
-					if(generation.get(j).getSpecies() == i)
-						speciesArr[counter++] = j;	
-				speciesArr = shuffleArray(speciesArr);
-				int randID = speciesArr[0];
-				
-				Organism twin = generation.get(randID).clone();
-				twin.setID(numOrgo);
-				generation.put(numOrgo, twin);
-				
-				numOrgo++;
-				speciesN[i]++;
+				if(lastGenSpecies.size() > 0){
+					
+					Collections.shuffle(lastGenSpecies);
+					
+					Organism parent1 = lastGenSpecies.get(0);
+					Organism parent2;
+					if(lastGenSpecies.size() > 1)
+						parent2 = lastGenSpecies.get(1);
+					else
+						parent2 = parent1.clone();
+					
+					Organism child = makeChild(parent1, parent2);
+					child.setID(numOrgo);
+					child.setSpecies(i);
+					generation.put(numOrgo, child);
+					
+					numOrgo++;
+					speciesN[i]++;
+					
+				}
+				else{
+					
+					ArrayList<Organism> thisGenSpecies = new ArrayList<Organism>();
+					for(int j = 0; j < generation.size(); j++)
+						if(generation.get(j).getSpecies() == i)
+							thisGenSpecies.add(generation.get(j));
+					
+					if(thisGenSpecies.size() > 0){
+						
+						Collections.shuffle(thisGenSpecies);
+						
+						Organism parent1 = thisGenSpecies.get(0);
+						Organism parent2;
+						if(thisGenSpecies.size() > 1)
+							parent2 = thisGenSpecies.get(1);
+						else
+							parent2 = parent1.clone();
+						
+						Organism child = makeChild(parent1, parent2);
+						child.setID(numOrgo);
+						child.setSpecies(i);
+						generation.put(numOrgo, child);
+						
+						numOrgo++;
+						speciesN[i]++;
+						
+					}
+					
+				}
 				
 			}
 			
@@ -710,7 +805,7 @@ public class BreederAlt{
 					neighbors++;
 				
 			}
-			generation.get(i).setFitness(generation.get(i).getFitness()/neighbors);
+			//generation.get(i).setFitness(generation.get(i).getFitness()/neighbors);
 			
 		}
 		

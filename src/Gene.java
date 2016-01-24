@@ -1,24 +1,49 @@
 public class Gene {
 	
 	private int innovNum;
+	private boolean isEdge;
 	private int in;
 	private int out;
 	private double weight;
+	private int id;
+	private double tier;
 	private boolean enabled;
 	
-	public Gene(int in, int out, double weight, int innovNum){
+	public Gene(int innovNum, boolean isEdge, int in, int out, double weight, int id, double tier){
 		
-		this.in = in;
-		this.out = out;
-		this.weight = weight;
 		this.innovNum = innovNum;
-		enabled = true;
+		this.isEdge = isEdge;
+		if(isEdge){
+			
+			this.in = in;
+			this.out = out;
+			this.weight = weight;
+			this.id = -1;
+			this.tier = -1;
+			
+		}
+		else{
+			
+			this.in = -1;
+			this.out = -1;
+			this.weight = 0;
+			this.id = id;
+			this.tier = tier;
+			
+		}
+		this.enabled = true;
 		
 	}
 	
-	public boolean getEnabled(){
+	public int getInnov(){
 		
-		return enabled;
+		return innovNum;
+		
+	}
+	
+	public boolean getIsEdge(){
+		
+		return isEdge;
 		
 	}
 	
@@ -40,9 +65,21 @@ public class Gene {
 		
 	}
 	
-	public int getInnov(){
+	public int getID(){
 		
-		return innovNum;
+		return id;
+		
+	}
+	
+	public double getTier(){
+		
+		return tier;
+		
+	}
+	
+	public boolean getEnabled(){
+		
+		return enabled;
 		
 	}
 	
@@ -72,7 +109,7 @@ public class Gene {
 	
 	public Gene clone(){
 		
-		Gene gene = new Gene(in, out, weight, innovNum);
+		Gene gene = new Gene(innovNum, isEdge, in, out, weight, id, tier);
 		if(!enabled)
 			gene.disable();
 		
