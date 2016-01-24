@@ -349,6 +349,62 @@ public class Breeder {
 		
 	}
 	
+	public void breedNextGen(){
+		
+		HashMap<Integer, Organism> prevGeneration = new HashMap<Integer, Organism>(generation);
+		generation.clear();
+		int numOrgo = 0;
+		
+		double avgFitness = 0;
+		
+		for(int i = 0; i < prevGeneration.size(); i++)
+			avgFitness += prevGeneration.get(i).getFitness()/(double)prevGeneration.size();
+		
+		/*Comparator<Organism> fitnessComparator = new Comparator<Organism>(){
+			@Override
+			public int compare(Organism o1, Organism o2){
+				return -1*Double.compare(o1.getFitness(), o2.getFitness());
+				}
+			};
+			
+		PriorityQueue<Organism> fitnessQueue = new PriorityQueue<Organism>(fitnessComparator);*/
+		
+		double offspringFactor = 1.0;
+		
+		if(prevGeneration.size() > 3000)
+			offspringFactor = 1.0 - (double)(prevGeneration.size() - 3000)/4000;
+		
+		Random random = new Random();
+		for(int i = 0; i < prevGeneration.size(); i++){
+			
+			Organism parent = prevGeneration.get(i);
+			int numChildren = (int) Math.round(parent.getFitness()*offspringFactor/avgFitness);
+			
+			//System.out.println(parent.getFitness()*speciesSize.get(parent.getSpecies()) + " " + numChildren);
+			
+			for(int j = 0; j < numChildren; j++){
+			
+				int randID = random.nextInt(prevGeneration.size());
+				while(prevGeneration.get(randID).getSpecies() != parent.getSpecies())
+					randID = random.nextInt(prevGeneration.size());
+				Organism parent1 = prevGeneration.get(randID);
+				Organism child1 = makeChild(parent, parent1, false);
+				child1.setID(numOrgo);
+				generation.put(numOrgo, child1);
+				numOrgo++;
+			
+			}
+			
+		}
+		
+		double[][] distanceMap = distanceMap(prevGeneration);
+		speciate(distanceMap, prevGeneration);
+		generations++;
+		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + generation.size() + ", Active Species: " + activeSpecies);
+		fitness();
+		
+	}
+	
 	private double[][] distanceMap(HashMap<Integer, Organism> prevGeneration){
 		
 		double[][] distanceMap = new double[generation.size()][prevGeneration.size()];
@@ -469,62 +525,6 @@ public class Breeder {
 		return distanceMap;
 		
 	}
-
-	public void breedNextGen(){
-		
-		HashMap<Integer, Organism> prevGeneration = new HashMap<Integer, Organism>(generation);
-		generation.clear();
-		int numOrgo = 0;
-		
-		double avgFitness = 0;
-		
-		for(int i = 0; i < prevGeneration.size(); i++)
-			avgFitness += prevGeneration.get(i).getFitness()/(double)prevGeneration.size();
-		
-		/*Comparator<Organism> fitnessComparator = new Comparator<Organism>(){
-			@Override
-			public int compare(Organism o1, Organism o2){
-				return -1*Double.compare(o1.getFitness(), o2.getFitness());
-				}
-			};
-			
-		PriorityQueue<Organism> fitnessQueue = new PriorityQueue<Organism>(fitnessComparator);*/
-		
-		double offspringFactor = 1.0;
-		
-		if(prevGeneration.size() > 3000)
-			offspringFactor = 1.0 - (double)(prevGeneration.size() - 3000)/4000;
-		
-		Random random = new Random();
-		for(int i = 0; i < prevGeneration.size(); i++){
-			
-			Organism parent = prevGeneration.get(i);
-			int numChildren = (int) Math.round(parent.getFitness()*offspringFactor/avgFitness);
-			
-			//System.out.println(parent.getFitness()*speciesSize.get(parent.getSpecies()) + " " + numChildren);
-			
-			for(int j = 0; j < numChildren; j++){
-			
-				int randID = random.nextInt(prevGeneration.size());
-				while(prevGeneration.get(randID).getSpecies() != parent.getSpecies())
-					randID = random.nextInt(prevGeneration.size());
-				Organism parent1 = prevGeneration.get(randID);
-				Organism child1 = makeChild(parent, parent1, false);
-				child1.setID(numOrgo);
-				generation.put(numOrgo, child1);
-				numOrgo++;
-			
-			}
-			
-		}
-		
-		double[][] distanceMap = distanceMap(prevGeneration);
-		speciate(distanceMap, prevGeneration);
-		generations++;
-		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + generation.size() + ", Active Species: " + activeSpecies);
-		fitness();
-		
-	}
 	
 	private double[][] distanceMap(){
 		
@@ -631,9 +631,9 @@ public class Breeder {
 			HashMap<Integer, Double> avgSpeciesDist = new HashMap<Integer, Double>();
 			for(int j = 0; j < prevGeneration.size(); j++)
 				if(avgSpeciesDist.containsKey(prevGeneration.get(j).getSpecies()))
-					avgSpeciesDist.put(prevGeneration.get(j).getSpecies(), avgSpeciesDist.get(prevGeneration.get(j).getSpecies()) + distanceMap[i][j]);
+					avgSpeciesDist.put(prevGeneration.get(j).getSpecies(), avgSpeciesDist.get(prevGeneration.get(j).getSpecies()) + distanceMap[i][j]*prevGeneration.get(j).getFitness()/prevSpeciesSize.get(prevGeneration.get(j).getSpecies()));
 				else
-					avgSpeciesDist.put(prevGeneration.get(j).getSpecies(), distanceMap[i][j]);
+					avgSpeciesDist.put(prevGeneration.get(j).getSpecies(), distanceMap[i][j]*prevGeneration.get(j).getFitness()/prevSpeciesSize.get(prevGeneration.get(j).getSpecies()));
 			Integer[] keys = avgSpeciesDist.keySet().toArray(new Integer[0]);
 			for(int j = 0; j < keys.length; j++)
 				if(prevSpeciesSize.get(keys[j]) > 0)
