@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 import java.util.Collections;
-//import java.util.Comparator;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.PriorityQueue;
 import java.util.Random;
@@ -137,8 +137,12 @@ public class Breeder {
 							genomeJEdges.remove(keysJ[b]);
 					keysJ = genomeJEdges.keySet().toArray(new Integer[0]);
 					
+					double N = (double) Math.max(keysI.length, keysJ.length);
+					
 					double Wn = 0;
 					double n = 0;
+					double D = 0;
+					double E = 0;
 					double maxI = 0;
 					double maxJ = 0;
 					
@@ -153,7 +157,7 @@ public class Breeder {
 						
 						for(int b = 0; b < keysJ.length; b++){
 							
-							if(keysI[a] == keysJ[b] && genomeI.get(keysI[a]).getIsEdge()){
+							if(keysI[a] == keysJ[b]){
 								
 								n++;
 								Wn += Math.abs(genomeI.get(keysI[a]).getWeight() - genomeJ.get(keysJ[b]).getWeight());
@@ -165,10 +169,17 @@ public class Breeder {
 								Wn += Math.abs(genomeI.get(keysI[a]).getWeight() - genomeJ.get(keysJ[b]).getWeight());
 								
 							}
+							else if(keysI[a] > maxJ && b == 0)
+								E++;
+							else if(keysJ[b] > maxI && a == 0)
+								E++;
 							
 						}
 						
 					}
+					
+					D = Math.min(keysI.length, keysJ.length) - n;
+					
 					double W;
 					
 					if(n == 0)
@@ -176,7 +187,7 @@ public class Breeder {
 					else
 						W = Wn/n;
 					
-					distanceMap[i][j] = ((double)Math.max(keysI.length, keysJ.length) - n)/((double)Math.max(keysI.length, keysJ.length)) + 0.4*W;
+					distanceMap[i][j] = E/N + D/N + 0.2*W;
 					distanceMap[j][i] = distanceMap[i][j];
 					
 				}
@@ -218,7 +229,7 @@ public class Breeder {
 			
 		}
 		
-		delta = Math.min(delta, Integer.MAX_VALUE/2);
+		delta = Math.min(delta, 0.8);
 		
 		return distanceMap;
 		
@@ -334,6 +345,7 @@ public class Breeder {
 	public void breedNextGen(){
 		
 		HashMap<Integer, Organism> prevGeneration = new HashMap<Integer, Organism>(generation);
+		HashMap<Integer, Organism> prevGenerationTemp = new HashMap<Integer, Organism>(generation);
 		generation.clear();
 		int numOrgo = 0;
 		
@@ -342,34 +354,72 @@ public class Breeder {
 		for(int i = 0; i < prevGeneration.size(); i++)
 			avgFitness += prevGeneration.get(i).getFitness()/(double)prevGeneration.size();
 		
-		/*Comparator<Organism> fitnessComparator = new Comparator<Organism>(){
+		HashMap<Integer, Double> speciesFitnessThreshold = new HashMap<Integer, Double>();
+		HashMap<Integer, Double> speciesNumOffspring = new HashMap<Integer, Double>();
+		
+		Comparator<Organism> fitnessComparator = new Comparator<Organism>(){
 			@Override
 			public int compare(Organism o1, Organism o2){
 				return -1*Double.compare(o1.getFitness(), o2.getFitness());
 				}
 			};
+		
+		speciesSize.clear();
+		
+		for(int i = 0; i < prevGeneration.size(); i++)
+			if(speciesSize.containsKey(prevGeneration.get(i).getSpecies()))
+				speciesSize.put(prevGeneration.get(i).getSpecies(), speciesSize.get(prevGeneration.get(i).getSpecies()) + 1);
+			else
+				speciesSize.put(prevGeneration.get(i).getSpecies(), 1);
+		
+		Integer[] species = speciesSize.keySet().toArray(new Integer[0]);
+		Organism[] organisms = prevGeneration.values().toArray(new Organism[0]);
+		for(int i = 0; i < species.length; i++){
 			
-		PriorityQueue<Organism> fitnessQueue = new PriorityQueue<Organism>(fitnessComparator);*/
+			int currSpecies = species[i];
+			speciesNumOffspring.put(currSpecies, 0.0);
+			PriorityQueue<Organism> fitnessQueue = new PriorityQueue<Organism>(fitnessComparator);
+			
+			for(int j = 0; j < organisms.length; j++)
+				if(organisms[j].getSpecies() == currSpecies){
+					
+					fitnessQueue.add(organisms[j]);
+					speciesNumOffspring.put(currSpecies, speciesNumOffspring.get(currSpecies) + organisms[j].getFitness()/avgFitness);
+					
+				}
+			
+			int size = fitnessQueue.size();
+			for(int j = 0; j < size; j++)
+				if(j <= (((double)size)*0.2 + 0.5) && j >= (((double)size)*0.2 - 0.5))
+					speciesFitnessThreshold.put(currSpecies, fitnessQueue.poll().getFitness());
+				else
+					fitnessQueue.poll();
+			
+		}
 		
 		double offspringFactor = 1.0;
 		
 		if(prevGeneration.size() > 3000)
 			offspringFactor = 1.0 - (double)(prevGeneration.size() - 3000)/4000;
 		
+		for(int i = 0; i < organisms.length; i++)
+			if(organisms[i].getFitness() < speciesFitnessThreshold.get(organisms[i].getSpecies()))
+				prevGeneration.remove(organisms[i].getID());
+		
+		organisms = prevGeneration.values().toArray(new Organism[0]);
+		
 		Random random = new Random();
-		for(int i = 0; i < prevGeneration.size(); i++){
+		for(int i = 0; i < organisms.length; i++){
 			
-			Organism parent = prevGeneration.get(i);
-			int numChildren = (int) Math.round(parent.getFitness()*offspringFactor/avgFitness);
-			
-			//System.out.println(parent.getFitness()*speciesSize.get(parent.getSpecies()) + " " + numChildren);
+			Organism parent = organisms[i];
+			int numChildren = (int) Math.round(offspringFactor*speciesNumOffspring.get(parent.getSpecies())/(0.2*speciesSize.get(parent.getSpecies())));
 			
 			for(int j = 0; j < numChildren; j++){
 			
-				int randID = random.nextInt(prevGeneration.size());
-				while(prevGeneration.get(randID).getSpecies() != parent.getSpecies())
-					randID = random.nextInt(prevGeneration.size());
-				Organism parent1 = prevGeneration.get(randID);
+				int randID = random.nextInt(organisms.length);
+				while(organisms[randID].getSpecies() != parent.getSpecies())
+					randID = random.nextInt(organisms.length);
+				Organism parent1 = organisms[randID];
 				Organism child1 = makeChild(parent, parent1, true);
 				child1.setID(numOrgo);
 				generation.put(numOrgo, child1);
@@ -378,6 +428,8 @@ public class Breeder {
 			}
 			
 		}
+		
+		prevGeneration = new HashMap<Integer, Organism>(prevGenerationTemp);
 		
 		double[][] distanceMap = distanceMap(prevGeneration);
 		speciate(distanceMap, prevGeneration);
@@ -411,8 +463,12 @@ public class Breeder {
 						genomeJEdges.remove(keysJ[b]);
 				keysJ = genomeJEdges.keySet().toArray(new Integer[0]);
 				
+				double N = (double)Math.max(keysI.length, keysJ.length);
+				
 				double Wn = 0;
 				double n = 0;
+				double D = 0;
+				double E = 0;
 				double maxI = 0;
 				double maxJ = 0;
 				
@@ -423,30 +479,32 @@ public class Breeder {
 					if(genomeJEdges.get(keysJ[b]).getIsEdge())
 						maxJ = (double) Math.max(keysJ[b], maxJ);
 				
-				int iSize = 0;
-				for(int a = 0; a < keysI.length; a++)
-					if(genomeI.get(keysI[a]).getIsEdge())
-						iSize++;
-				
-				int jSize = 0;
-				for(int b = 0; b < keysJ.length; b++)
-					if(genomeJ.get(keysJ[b]).getIsEdge())
-						jSize++;
-				
 				for(int a = 0; a < keysI.length; a++){
 					
 					for(int b = 0; b < keysJ.length; b++){
 						
-						if(keysI[a] == keysJ[b] && genomeI.get(keysI[a]).getIsEdge()){
+						if(keysI[a] == keysJ[b]){
 							
 							n++;
 							Wn += Math.abs(genomeI.get(keysI[a]).getWeight() - genomeJ.get(keysJ[b]).getWeight());
 							
 						}
+						else if(genomeI.get(keysI[a]).getIn() == genomeJ.get(keysJ[b]).getIn() && genomeI.get(keysI[a]).getOut() == genomeJ.get(keysJ[b]).getOut()){
+							
+							n++;
+							Wn += Math.abs(genomeI.get(keysI[a]).getWeight() - genomeJ.get(keysJ[b]).getWeight());
+							
+						}
+						else if(keysI[a] > maxJ && b == 0)
+							E++;
+						else if(keysJ[b] > maxI && a == 0)
+							E++;
 						
 					}
 					
 				}
+				
+				D = Math.min(keysI.length, keysJ.length) - n;
 				
 				double W;
 				
@@ -455,7 +513,7 @@ public class Breeder {
 				else
 					W = Wn/n;
 				
-				distanceMap[i][j] = ((double)(Math.max(iSize, jSize)) - n)/((double)Math.max(iSize, jSize)) + 0.4*W;
+				distanceMap[i][j] = E/N + D/N + 0.2*W;
 				
 			}
 			
@@ -494,7 +552,7 @@ public class Breeder {
 			
 		}
 		
-		delta = Math.min(delta, Integer.MAX_VALUE/2);
+		delta = Math.min(delta, 0.5);
 		
 		return distanceMap;
 		
@@ -821,7 +879,8 @@ public class Breeder {
 			
 		}
 		
-		if(canMutate)
+		double willMutate = random.nextDouble();
+		if(canMutate && willMutate < 0.5)
 			genome = mutate(genome);
 		
 		return new Organism(genome);
@@ -832,15 +891,18 @@ public class Breeder {
 	private HashMap<Integer, Gene> mutate(HashMap<Integer, Gene> genome){
 		
 		Random random = new Random();
-		int mutation = random.nextInt(8);
-		if(mutation == 0)
-			genome = addNode(genome);
-		mutation = random.nextInt(8);
-		if(mutation == 0)
-			genome = addEdge(genome);
-		mutation = random.nextInt(5);
-		if(mutation == 0)
+		double numMutations = Math.abs(random.nextGaussian())*1.5 + 1.0;
+		for(int i = 0; i < numMutations; i++){
+			
+			int mutation = random.nextInt(4);
+			if(mutation <= 1)
+				genome = addNode(genome);
+			if(mutation == 2)
+				genome = addEdge(genome);
+			if(mutation == 3)
 			genome = adjustWeight(genome);
+			
+		}
 		
 		return genome;
 		
@@ -851,15 +913,23 @@ public class Breeder {
 		int id = 0;
 		
 		Gene[] genomeArr = genome.values().toArray(new Gene[0]);
-		
 		ArrayList<Gene> edges = new ArrayList<Gene>();
 		for(int i = 0; i < genomeArr.length; i++)
 			if(genomeArr[i].getIsEdge() && genomeArr[i].getEnabled()){
 				
-				if(!edges.contains(genomeArr[i].getInnov()))
+				if(!edges.contains(genomeArr[i]))
 					edges.add(genomeArr[i]);
 				
 			}
+		
+		if(edges.size() == 0){
+			for(int i = 0; i < genomeArr.length; i++)
+				if(genomeArr[i].getIsEdge()){
+					genomeArr[i].enable();
+					genome.put(genomeArr[i].getInnov(), genomeArr[i]);
+				}
+			return genome;
+		}
 		
 		Random random = new Random();
 		Gene edge = edges.get(random.nextInt(edges.size()));
@@ -885,6 +955,7 @@ public class Breeder {
 		Gene[] geneListArr = geneList.values().toArray(new Gene[0]);
 		for(int i = 0; i < geneListArr.length; i++)
 			id = Math.max(id, geneListArr[i].getID());
+		id++;
 		
 		double gaussian = random.nextGaussian();
 		double tierFactor = 2.0;
@@ -898,6 +969,7 @@ public class Breeder {
 		Gene edge1 = new Gene(innovTotal + 1, true, node.getID(), rand2, 1.0, -1, -1);
 		Gene edge2 = new Gene(innovTotal + 2, true, rand1, node.getID(), 1.0, -1, -1);
 		
+		top:
 		for(int i = 0; i < geneListArr.length; i++){
 			
 			if(geneListArr[i].getIsEdge() && geneListArr[i].getOut() == rand2){
@@ -918,11 +990,19 @@ public class Breeder {
 							if(k == j && j != geneListArr.length - 1)
 								k++;
 							
-							if(geneListArr[k].getTier() == node.getTier()){
+							if(geneListArr[k].getTier() == node.getTier() && geneListArr[k].getID() == nodeID){
 								
-								node = geneListArr[k].clone();
-								edge1 = geneListArr[i].clone();
-								edge2 = geneListArr[j].clone();
+								double doOrDie = random.nextDouble();
+								
+								if(doOrDie > 0.25){
+									
+									node = geneListArr[k].clone();
+									edge1 = geneListArr[i].clone();
+									edge2 = geneListArr[j].clone();
+									
+								}
+								
+								break top;
 								
 							}
 							
@@ -1047,6 +1127,7 @@ public class Breeder {
 			
 		}
 		
+		gene = gene.clone();
 		gene.setWeight(2*random.nextDouble() - 1);
 		genome.put(gene.getInnov(), gene);
 		
@@ -1068,8 +1149,14 @@ public class Breeder {
 		
 		double chance = random.nextDouble();
 		
+		double weight = edge.getWeight() + 0.25*random.nextGaussian();
+		if(weight > 2)
+			weight = 2;
+		else if(weight < -2)
+			weight = -2;
+		
 		if(chance >= 0.2)
-			edge.setWeight(edge.getWeight() + 0.25*random.nextGaussian());
+			edge.setWeight(weight);
 		else
 			edge.setWeight(2.0*random.nextDouble() - 1.0);
 		
@@ -1087,6 +1174,7 @@ public class Breeder {
 		int minfitspec = 0;
 		int n = 30;
 		
+		Random random = new Random();
 		for(int i = 0; i < generation.size(); i++){
 			
 			Brain brain = genoToPheno(generation.get(i).cloneGenome());
@@ -1133,7 +1221,7 @@ public class Breeder {
 				minfitspec = i;
 				
 			}
-			generation.get(i).setFitness(generation.get(i).getFitness()/(double)speciesSize.get(generation.get(i).getSpecies()));
+			generation.get(i).setFitness(generation.get(i).getFitness()/Math.sqrt((double)speciesSize.get(generation.get(i).getSpecies())));
 			
 		}
 		
@@ -1141,10 +1229,13 @@ public class Breeder {
 		
 		System.out.println("Organism " + maxfitspec + ", Species " + generation.get(maxfitspec).getSpecies() + "\nfitness:" + maxFitness);
 		
+		double[][] fit2 = genoToPheno(generation.get(maxfitspec).cloneGenome()).getGraph();
+		System.out.println("nodes:" + fit2.length);
+		
 		if(maxFitness > 2000){
 		
 			System.out.println("topology:");
-			double[][] fit = genoToPheno(generation.get(maxfitspec).cloneGenome()).getGraph().clone();
+			double[][] fit = genoToPheno(generation.get(maxfitspec).cloneGenome()).getGraph();
 			
 			System.out.print("{");
 			for(int i = 0; i < fit.length; i++){
@@ -1191,6 +1282,7 @@ public class Breeder {
 			}
 			
 		}
+
 		PriorityQueue<Double> nodesL = new PriorityQueue<Double>();
 		Integer[] vertices = nodesH.keySet().toArray(new Integer[0]);
 		Integer[] verticesClone = new Integer[vertices.length];

@@ -132,7 +132,13 @@ public class Game {
 	
 	public void move(int dir){
 		
-		int[][] boardCopy = board.clone();
+		int[][] boardCopy = new int[board.length][board[0].length];
+		for(int i = 0; i < board.length; i++){
+			
+			for(int j = 0; j < board[i].length; j++)
+				boardCopy[i][j] = board[i][j];
+				
+		}
 		
 		switch(dir){
 			case 0:
