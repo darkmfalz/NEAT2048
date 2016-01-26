@@ -10,7 +10,7 @@ public class Brain{
 		
 	}
 	
-	public int brainMove(int[][] board){
+	public double[] brainMove(int[][] board){
 		
 		//everything except output
 		double[] activity = new double[neurons - 4];
@@ -28,21 +28,7 @@ public class Brain{
 			for(int j = 4; j < neurons - 4; j++)
 				output[i] +=activity[j]*graph[i][j];
 		
-		double max = output[0];
-		int maxPos = 0;
-		
-		for(int i = 1; i < output.length; i++){
-			
-			if(output[i] > max){
-				
-				max = output[i];
-				maxPos = i;
-				
-			}
-			
-		}
-		
-		return maxPos;
+		return output;
 		
 	}
 	

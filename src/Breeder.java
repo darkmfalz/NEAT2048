@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ public class Breeder {
 	private HashMap<Integer, Gene> geneList;
 	private HashMap<Integer, Organism> generation;
 	private HashMap<Integer, Integer> speciesSize;
+	private HashMap<Integer, double[]> extinctionMap;
 	private int activeSpecies;
 	private int nextSpecies;
 	private Game game;
@@ -31,6 +33,8 @@ public class Breeder {
 		speciesSize = new HashMap<Integer, Integer>();
 		activeSpecies = 0;
 		nextSpecies = 0;
+		
+		extinctionMap = new HashMap<Integer, double[]>();
 		
 		game = new Game();
 		
@@ -349,20 +353,101 @@ public class Breeder {
 		generation.clear();
 		int numOrgo = 0;
 		
-		double avgFitness = 0;
-		
-		for(int i = 0; i < prevGeneration.size(); i++)
-			avgFitness += prevGeneration.get(i).getFitness()/(double)prevGeneration.size();
-		
-		HashMap<Integer, Double> speciesFitnessThreshold = new HashMap<Integer, Double>();
-		HashMap<Integer, Double> speciesNumOffspring = new HashMap<Integer, Double>();
-		
 		Comparator<Organism> fitnessComparator = new Comparator<Organism>(){
 			@Override
 			public int compare(Organism o1, Organism o2){
 				return -1*Double.compare(o1.getFitness(), o2.getFitness());
 				}
 			};
+			
+		HashMap<Integer, double[]> fitnessMetrics = new HashMap<Integer, double[]>();
+		HashMap<Integer, PriorityQueue<Organism>> c = new HashMap<Integer, PriorityQueue<Organism>>(); 
+		
+		for(int i = 0; i < prevGeneration.size(); i++)
+			if(c.containsKey(prevGeneration.get(i).getSpecies()))
+				c.get(prevGeneration.get(i).getSpecies()).add(prevGeneration.get(i));
+			else{
+				
+				PriorityQueue<Organism> queue = new PriorityQueue<Organism>(fitnessComparator);
+				queue.add(prevGeneration.get(i));
+				c.put(prevGeneration.get(i).getSpecies(), queue);
+				
+			}
+		
+		Integer[] keysC = c.keySet().toArray(new Integer[0]);
+		for(int i = 0; i < keysC.length; i++){
+			
+			double[] fArr = new double[2];
+			PriorityQueue<Organism> a = c.get(keysC[i]);
+			int size = a.size();
+			
+			for(int j = 0; j < size; j++){
+				
+				if(j == 0)
+					fArr[0] = a.poll().getFitness();
+				else if(j > size/2 - 1 && j < size/2 + 1)
+					fArr[1] = a.poll().getFitness();
+				else
+					a.poll();
+				
+			}
+			
+			fitnessMetrics.put(keysC[i], fArr);
+			
+		}
+		
+		for(int i = 0; i < keysC.length; i++){
+			
+			if(extinctionMap.containsKey(keysC[i])){
+				
+				double[] a = fitnessMetrics.get(keysC[i]);
+				double[] b = extinctionMap.get(keysC[i]);
+				
+				double penalty = 0;
+				
+				if(a[0] < b[0])
+					penalty += 0.25;
+				if(a[1] <= b[1])
+					penalty += 0.75;
+				
+				b[2] += penalty;
+				
+				extinctionMap.put(keysC[i], b);
+				
+			}
+			else{
+				double[] adeeb = new double[3];
+				adeeb[0] = fitnessMetrics.get(keysC[i])[0];
+				adeeb[1] = fitnessMetrics.get(keysC[i])[1];
+				adeeb[2] = 0;
+				extinctionMap.put(keysC[i], adeeb);
+			}
+			
+		}
+		
+		PriorityQueue<Organism> queue = new PriorityQueue<Organism>(fitnessComparator);
+
+		for(int i = 0; i < prevGeneration.size(); i++)
+			queue.add(prevGeneration.get(i));
+		
+		double avgFitness = 0;
+		double avgFitnessU = 0;
+		
+		for(int i = 0; i < prevGeneration.size(); i++)
+			if(i > prevGeneration.size()/2 - 1 && i < prevGeneration.size()/2 + 1){
+			
+				Organism med = queue.poll();
+				avgFitness = med.getFitness();
+				avgFitnessU = avgFitness*speciesSize.get(med.getSpecies());
+				break;
+				
+			}
+			else
+				queue.poll();
+		System.out.println("average fitness:" + Math.round(avgFitnessU));
+		
+		HashMap<Integer, Double> speciesFitnessThreshold = new HashMap<Integer, Double>();
+		HashMap<Integer, Double> speciesNumOffspring = new HashMap<Integer, Double>();
 		
 		speciesSize.clear();
 		
@@ -397,16 +482,74 @@ public class Breeder {
 			
 		}
 		
-		double offspringFactor = 1.0;
-		
-		if(prevGeneration.size() > 3000)
-			offspringFactor = 1.0 - (double)(prevGeneration.size() - 3000)/4000;
-		
+		organisms = prevGeneration.values().toArray(new Organism[0]);
 		for(int i = 0; i < organisms.length; i++)
 			if(organisms[i].getFitness() < speciesFitnessThreshold.get(organisms[i].getSpecies()))
 				prevGeneration.remove(organisms[i].getID());
 		
+		double nextPop = 0;
+		
+		for(int i = 0; i < organisms.length; i++)
+			nextPop += Math.round(1.0*speciesNumOffspring.get(organisms[i].getSpecies())/(0.2*speciesSize.get(organisms[i].getSpecies())));
+		
+		//Cause extinction
+		for(int i = 0; i < keysC.length; i++){
+			
+			if(extinctionMap.get(keysC[i])[2] > 15){
+				
+				organisms = prevGeneration.values().toArray(new Organism[0]);
+				for(int j = 0; j < organisms.length; j++)
+					if(organisms[j].getSpecies() == keysC[i])
+						prevGeneration.remove(organisms[j].getID());
+				
+				Integer[] keysF = speciesNumOffspring.keySet().toArray(new Integer[0]);
+				double popMove = 0;
+				for(int j = 0; j < keysF.length; j++)
+					if(keysC[i] == keysF[j]){
+						popMove = speciesNumOffspring.get(keysF[j]);
+						speciesNumOffspring.remove(keysF[j]);
+						break;
+					}
+				
+				for(int j = 0; j < keysF.length; j++){
+					
+					if(keysF[j] == keysC[i] && j != keysF.length - 1)
+						j++;
+					else if(keysF[j] == keysC[i] && j == keysF.length - 1)
+						break;
+					
+					double adeeb = speciesNumOffspring.get(keysF[j]);
+					
+					speciesNumOffspring.put(keysF[j], adeeb + popMove*speciesNumOffspring.get(keysF[j])/nextPop);
+					
+				}
+				
+			}
+			
+		}
+		
+		double offspringFactor = 1.0;
+		//fix population constraints
+		if(nextPop > 500)
+			offspringFactor = 0.8*50/(nextPop - 500) + 0.2;
+		offspringFactor = Math.min(offspringFactor, 1.0);
+		offspringFactor = Math.max(offspringFactor, 0.2);
+		nextPop = 0;
 		organisms = prevGeneration.values().toArray(new Organism[0]);
+		for(int i = 0; i < organisms.length; i++){
+			nextPop += Math.round(offspringFactor*speciesNumOffspring.get(organisms[i].getSpecies())/(0.2*speciesSize.get(organisms[i].getSpecies())));
+		}
+			
+		while(nextPop > 1000){
+			
+			offspringFactor *= 0.7;
+			nextPop = 0;
+			for(int i = 0; i < organisms.length; i++)
+				nextPop += Math.round(offspringFactor*speciesNumOffspring.get(organisms[i].getSpecies())/(0.2*speciesSize.get(organisms[i].getSpecies())));
+			
+		}
+		
+		System.out.println("predicted next population:" + nextPop);
 		
 		Random random = new Random();
 		for(int i = 0; i < organisms.length; i++){
@@ -431,9 +574,9 @@ public class Breeder {
 		
 		prevGeneration = new HashMap<Integer, Organism>(prevGenerationTemp);
 		
+		generations++;
 		double[][] distanceMap = distanceMap(prevGeneration);
 		speciate(distanceMap, prevGeneration);
-		generations++;
 		System.out.println("Generation:" + generations + ", Delta:" + delta + ", Organisms: " + generation.size() + ", Active Species: " + activeSpecies);
 		fitness();
 		
@@ -545,14 +688,14 @@ public class Breeder {
 		int size = queue2.size();
 		for(int i = 0; i < size; i++){
 	
-			if(i == (int)(size*0.5))
+			if(i == (int)(size*0.2))
 				delta = queue2.poll();
 			else
 				queue2.poll();
 			
 		}
 		
-		delta = Math.min(delta, 0.5);
+		delta = Math.min(delta, 0.2 + 0.3/generations);
 		
 		return distanceMap;
 		
@@ -1173,8 +1316,7 @@ public class Breeder {
 		double minfit = Double.MAX_VALUE;
 		int minfitspec = 0;
 		int n = 30;
-		
-		Random random = new Random();
+
 		for(int i = 0; i < generation.size(); i++){
 			
 			Brain brain = genoToPheno(generation.get(i).cloneGenome());
@@ -1182,7 +1324,7 @@ public class Breeder {
 			for(int j = 0; j < n; j++){
 				
 				int score = 0;
-				
+				theGame:
 				while(game.canWin){
 					
 					int[][] boardB4 = new int[game.getBoard().length][game.getBoard()[0].length];
@@ -1191,14 +1333,42 @@ public class Breeder {
 							boardB4[a][b] = game.getBoard()[a][b];
 					
 					score = game.score;
+					double[] moveset = brain.brainMove(game.getBoard());
+					HashMap<Double, Integer> thing = new HashMap<Double, Integer>();
+					int[] moveorder = new int[4];
 					
-					game.move(brain.brainMove(game.getBoard()));
+					for(int a = 0; a < 4; a++)
+						thing.put(moveset[a], a);
 					
+					Arrays.sort(moveset);
+					
+					for(int a = 0; a < 4; a++)
+						moveorder[a] = thing.get(moveset[a]);
+					
+					boolean equals = true;
+					for(int a = 0; a < game.getBoard().length; a++)
+						for(int b = 0; b < game.getBoard()[a].length; b++)
+							equals = equals && (boardB4[a][b] == game.getBoard()[a][b]);
+		
 					//If it doesn't make a move that changes anything
 					//while(boardB4.equals(game.getBoard()))
 					//	game.move(random.nextInt(4));
-					if(boardB4.equals(game.getBoard()))
-						break;
+					int c = 0;
+					
+					while(equals){
+						
+						if(c == 4)
+							break theGame;
+						
+						game.move(moveorder[c]);
+						
+						c++;
+						
+						equals = true;
+						for(int a = 0; a < game.getBoard().length; a++)
+							for(int b = 0; b < game.getBoard()[a].length; b++)
+								equals = equals && (boardB4[a][b] == game.getBoard()[a][b]);
+					}
 					
 				}
 				score += generation.get(i).getFitness();
@@ -1221,13 +1391,13 @@ public class Breeder {
 				minfitspec = i;
 				
 			}
-			generation.get(i).setFitness(generation.get(i).getFitness()/Math.sqrt((double)speciesSize.get(generation.get(i).getSpecies())));
+			generation.get(i).setFitness(generation.get(i).getFitness()/((double)speciesSize.get(generation.get(i).getSpecies())));
 			
 		}
 		
 		maxFitness = maxfit;
 		
-		System.out.println("Organism " + maxfitspec + ", Species " + generation.get(maxfitspec).getSpecies() + "\nfitness:" + maxFitness);
+		System.out.println("Organism " + maxfitspec + ", Species " + generation.get(maxfitspec).getSpecies() + "\nfitness:" + Math.round(maxFitness));
 		
 		double[][] fit2 = genoToPheno(generation.get(maxfitspec).cloneGenome()).getGraph();
 		System.out.println("nodes:" + fit2.length);
