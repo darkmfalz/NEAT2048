@@ -20,7 +20,7 @@ public class Breeder {
 	private int nextSpecies;
 	private Game game;
 
-	private double proprSpecies = 0.5;
+	private double proprSpecies = 0.75;
 	
 	public Breeder(int numOrgo){
 		
@@ -406,9 +406,9 @@ public class Breeder {
 				double penalty = 0;
 				
 				if(a[0] < b[0])
-					penalty += 0.25;
+					penalty += 1.0;
 				if(a[1] <= b[1])
-					penalty += 0.75;
+					penalty += 1.0;
 				
 				b[2] += penalty;
 				
@@ -530,8 +530,8 @@ public class Breeder {
 		
 		double offspringFactor = 1.0;
 		//fix population constraints
-		if(nextPop > 500)
-			offspringFactor = 0.8*50/(nextPop - 500) + 0.2;
+		if(nextPop > 4000)
+			offspringFactor = 0.8*500/(nextPop - 4000) + 0.2;
 		offspringFactor = Math.min(offspringFactor, 1.0);
 		offspringFactor = Math.max(offspringFactor, 0.2);
 		nextPop = 0;
@@ -540,7 +540,7 @@ public class Breeder {
 			nextPop += Math.round(offspringFactor*speciesNumOffspring.get(organisms[i].getSpecies())/(0.2*speciesSize.get(organisms[i].getSpecies())));
 		}
 			
-		while(nextPop > 1000){
+		while(nextPop > 4000){
 			
 			offspringFactor *= 0.7;
 			nextPop = 0;
